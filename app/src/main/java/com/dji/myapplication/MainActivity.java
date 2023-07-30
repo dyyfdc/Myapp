@@ -181,7 +181,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private double yVelocity = 0.0;
     private String yVelocityStr = "0";
 
-
     private String readText;
     private String readNum[];
 
