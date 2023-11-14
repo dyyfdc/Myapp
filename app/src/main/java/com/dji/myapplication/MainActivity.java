@@ -1744,6 +1744,130 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     firstAvoid = false;
                 }
 
+                //-----------------------------------------------------------------------
+                /*showToast("Upload!");
+
+                // 添加媒体文件列表监听
+                MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
+                    @Override
+                    public void onUpdate(MediaFileListState mediaFileListState) {
+                        realMediaFileListState = mediaFileListState;
+                    }
+                });
+
+                MediaManager.getInstance().enable(new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        MediaManager.getInstance().pullMediaFileListFromCamera(new PullMediaFileListParam.Builder().filter(MediaFileFilter.PHOTO).build(), new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                showToast("Pull Success");
+                                pullSuccess = true;
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+                                showToast("Pull Fail");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull IDJIError error) {
+                        System.out.println("Enable Fail");
+                    }
+                });
+
+                if (firstAvoid) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            try {
+                                Socket sendPhotoSocket = new Socket("192.168.43.167", 8081);
+                                showToast("Connect Success");
+                                OutputStream os = sendPhotoSocket.getOutputStream();
+
+                                while (true) {
+                                    //等待拉取多媒体文件
+                                    while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
+                                        System.out.println("-----------" + realMediaFileListState + "-----------");
+                                    }
+
+                                    if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
+                                        MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
+                                        List<MediaFile> photoData = mediaFileListData.getData();
+                                        if (photoData.size() > 0) {
+                                            MediaFile mediaFile = photoData.get(0);
+                                            mediaFile.pullOriginalMediaFileFromCamera(0, new MediaFileDownloadListener() {
+                                                @Override
+                                                public void onStart() {
+                                                    stime = System.currentTimeMillis();
+                                                }
+
+                                                @Override
+                                                public void onProgress(long total, long current) {
+
+                                                }
+
+                                                @Override
+                                                public void onRealtimeDataUpdate(byte[] data, long position) {
+                                                    try {
+                                                        os.write(data, 0, data.length);
+                                                    } catch (IOException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onFinish() {
+                                                    uploadFinish = true;
+                                                    etime = System.currentTimeMillis();
+                                                    long wasteTime = etime - stime;
+                                                    System.out.println("-----------------waste time: " + wasteTime);
+                                                    MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+
+                                                        }
+
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+
+                                                        }
+                                                    });
+                                                }
+
+                                                @Override
+                                                public void onFailure(IDJIError error) {
+
+                                                }
+                                            });
+                                        } else {
+                                            if (uploadFinish) {
+                                                MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                                    @Override
+                                                    public void onSuccess() {
+
+                                                    }
+
+                                                    @Override
+                                                    public void onFailure(@NonNull IDJIError error) {
+
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
+                }*/
+
                 break;
         }
     }
