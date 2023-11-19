@@ -90,12 +90,14 @@ import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -219,6 +221,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private long stime = 0;
     private long etime = 0;
+
+    private boolean sendPicFin = false;
 
     private List<String> missingPermission = new ArrayList<>();
     private static final int REQUEST_PERMISSION_CODE = 12345;
@@ -1602,7 +1606,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 拉取图片并下载
             case R.id.btn_upload:
 
-                showToast("Upload");
+                /*showToast("Upload");
                 // 添加媒体文件列表监听
                 MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
                     @Override
@@ -1661,7 +1665,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     lastMediaIndex = mediaIndex;
                                     pullSuccess = false;
                                     while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
-                                        /*System.out.println("-----------" + realMediaFileListState + "-----------");*/
+                                        *//*System.out.println("-----------" + realMediaFileListState + "-----------");*//*
                                     }
                                     etime = System.currentTimeMillis();
                                     long wasteTime = etime - stime;
@@ -1671,7 +1675,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
                                         List<MediaFile> photoData = mediaFileListData.getData();
                                         if (photoData.size() > 0) {
-                                            /*System.out.println("----------" + "size: " + photoData.size() + "----------");*/
+                                            *//*System.out.println("----------" + "size: " + photoData.size() + "----------");*//*
                                             MediaFile mediaFile = photoData.get(photoData.size() - 1);
                                             String externalCacheDirPath = DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile" + "/" + String.valueOf(photoData.size()) + ".jpg");
                                             try {
@@ -1742,10 +1746,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         }
                     }).start();
                     firstAvoid = false;
-                }
+                }*/
 
                 //-----------------------------------------------------------------------
-                /*showToast("Upload!");
+                showToast("Upload!");
 
                 // 添加媒体文件列表监听
                 MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
@@ -1778,27 +1782,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 });
 
+                // 设置文件保存路径
+                File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                if(!fileDir.exists()) {
+                    fileDir.mkdirs();
+                }
+
                 if (firstAvoid) {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
 
                             try {
-                                Socket sendPhotoSocket = new Socket("192.168.43.167", 8081);
-                                showToast("Connect Success");
-                                OutputStream os = sendPhotoSocket.getOutputStream();
+                                //等待拉取多媒体文件
+                                while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
 
-                                while (true) {
-                                    //等待拉取多媒体文件
-                                    while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
-                                        System.out.println("-----------" + realMediaFileListState + "-----------");
-                                    }
+                                }
 
-                                    if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
-                                        MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
-                                        List<MediaFile> photoData = mediaFileListData.getData();
-                                        if (photoData.size() > 0) {
-                                            MediaFile mediaFile = photoData.get(0);
+                                int num = 0;
+                                if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
+                                    MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
+                                    List<MediaFile> photoData = mediaFileListData.getData();
+                                    if (photoData.size() > 0) {
+                                        for (MediaFile mediaFile : photoData) {
+                                            while (sendPicFin) {
+
+                                            }
+                                            num++;
+                                            showToast("Send: " + num);
+                                            sendPicFin = true;
+                                            String externalCacheDirPath = DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile" + "/" + mediaFile.getFileName());
+                                            FileOutputStream fos = new FileOutputStream(new File(externalCacheDirPath));
                                             mediaFile.pullOriginalMediaFileFromCamera(0, new MediaFileDownloadListener() {
                                                 @Override
                                                 public void onStart() {
@@ -1813,7 +1827,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                 @Override
                                                 public void onRealtimeDataUpdate(byte[] data, long position) {
                                                     try {
-                                                        os.write(data, 0, data.length);
+                                                        fos.write(data, 0, data.length);
                                                     } catch (IOException e) {
                                                         e.printStackTrace();
                                                     }
@@ -1824,7 +1838,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     uploadFinish = true;
                                                     etime = System.currentTimeMillis();
                                                     long wasteTime = etime - stime;
-                                                    System.out.println("-----------------waste time: " + wasteTime);
+                                                    System.out.println("Send waste time: " + wasteTime);
                                                     MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
                                                         @Override
                                                         public void onSuccess() {
@@ -1836,6 +1850,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                                         }
                                                     });
+                                                    sendPicFin = false;
                                                 }
 
                                                 @Override
@@ -1843,20 +1858,78 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                                 }
                                             });
-                                        } else {
-                                            if (uploadFinish) {
-                                                MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
-                                                    @Override
-                                                    public void onSuccess() {
+                                        }
 
-                                                    }
+                                        try {
+                                            Thread.sleep(1000);
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
 
-                                                    @Override
-                                                    public void onFailure(@NonNull IDJIError error) {
+                                        Socket clientSocket = new Socket("192.168.0.81", 8888);
+                                        showToast("Connect success!");
 
-                                                    }
-                                                });
+                                        List<File> imageFiles = getImageFiles(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                                        int imageCount = imageFiles.size();
+                                        ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+                                        objectOutputStream.writeInt(imageCount);
+                                        objectOutputStream.flush();
+
+                                        // 传输每张图片
+                                        for (File imageFile : imageFiles) {
+                                            String filename = imageFile.getName();
+                                            byte[] imageData = new byte[(int) imageFile.length()];
+
+                                            FileInputStream fileInputStream = new FileInputStream(imageFile);
+                                            fileInputStream.read(imageData);
+                                            fileInputStream.close();
+
+                                            // 发送图片信息
+                                            objectOutputStream.writeObject(filename);
+                                            objectOutputStream.flush();
+
+                                            // 发送图片数据
+                                            objectOutputStream.writeObject(imageData);
+                                            objectOutputStream.flush();
+                                        }
+
+                                        objectOutputStream.close();
+                                        clientSocket.close();
+
+                                        MediaManager.getInstance().deleteMediaFiles(photoData, new CommonCallbacks.CompletionCallback() {
+                                            @Override
+                                            public void onSuccess() {
+                                                System.out.println("清空数据成功！");
                                             }
+
+                                            @Override
+                                            public void onFailure(@NonNull IDJIError error) {
+                                                System.out.println("清空数据失败！");
+                                            }
+                                        });
+
+                                        for(File imageFile : imageFiles) {
+                                            if (imageFile.isFile()) {
+                                                imageFile.delete();
+                                            }
+                                        }
+
+                                        showToast("Transfer Success!");
+
+
+                                    } else {
+                                        if (uploadFinish) {
+                                            MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                                @Override
+                                                public void onSuccess() {
+
+                                                }
+
+                                                @Override
+                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                }
+                                            });
                                         }
                                     }
                                 }
@@ -1866,7 +1939,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             }
                         }
                     }).start();
-                }*/
+                }
 
                 break;
         }
@@ -2068,6 +2141,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mSendVirtualStickDataTimer = null;
         }
         super.onDestroy();
+    }
+
+    private static List<File> getImageFiles(String folderPath) {
+        List<File> imageFiles = new ArrayList<>();
+        File folder = new File(folderPath);
+
+        // 获取文件夹中的所有文件
+        File[] files = folder.listFiles();
+
+        if (files != null) {
+            for (File file : files) {
+                // 仅选择图片文件
+                if (file.isFile() && isImageFile(file.getName())) {
+                    imageFiles.add(file);
+                }
+            }
+        }
+
+        return imageFiles;
+    }
+
+    private static boolean isImageFile(String fileName) {
+        String[] imageExtensions = {"jpg", "jpeg", "png", "gif", "bmp"};
+        for (String extension : imageExtensions) {
+            if (fileName.toLowerCase().endsWith("." + extension)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
