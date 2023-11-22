@@ -1866,17 +1866,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             e.printStackTrace();
                                         }
 
-                                        Socket clientSocket = new Socket("192.168.0.81", 8888);
+                                        Socket clientSocket = new Socket("192.168.3.202", 8888);
                                         showToast("Connect success!");
 
                                         List<File> imageFiles = getImageFiles(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
                                         int imageCount = imageFiles.size();
+                                        if (imageCount > 30) {
+                                            imageCount = 30;
+                                        }
                                         ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
                                         objectOutputStream.writeInt(imageCount);
                                         objectOutputStream.flush();
 
                                         // 传输每张图片
+                                        int maxNum = 0;
                                         for (File imageFile : imageFiles) {
+                                            maxNum++;
+                                            if (maxNum > 30) {
+                                                break;
+                                            }
                                             String filename = imageFile.getName();
                                             byte[] imageData = new byte[(int) imageFile.length()];
 
@@ -1891,6 +1899,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             // 发送图片数据
                                             objectOutputStream.writeObject(imageData);
                                             objectOutputStream.flush();
+
+                                            // GC防止OOM
+                                            System.gc();
                                         }
 
                                         objectOutputStream.close();
