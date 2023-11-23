@@ -1866,46 +1866,63 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             e.printStackTrace();
                                         }
 
-                                        Socket clientSocket = new Socket("192.168.3.202", 8888);
+                                        Socket client = new Socket("192.168.0.35", 8888);
                                         showToast("Connect success!");
+
+                                        OutputStream os = client.getOutputStream();
+                                        OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
+                                        BufferedWriter bw = new BufferedWriter(osw);
+
+                                        InputStream is = client.getInputStream();
+                                        InputStreamReader isr = new InputStreamReader(is, "UTF-8");
+                                        BufferedReader br = new BufferedReader(isr);
 
                                         List<File> imageFiles = getImageFiles(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
                                         int imageCount = imageFiles.size();
-                                        if (imageCount > 30) {
-                                            imageCount = 30;
-                                        }
-                                        ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-                                        objectOutputStream.writeInt(imageCount);
-                                        objectOutputStream.flush();
+
+                                        bw.write(String.valueOf(imageCount) + '\n');
+                                        bw.flush();
+
+                                        br.readLine();
 
                                         // 传输每张图片
-                                        int maxNum = 0;
+                                        byte[] imageData = new byte[10 * 1024 * 1024];
                                         for (File imageFile : imageFiles) {
-                                            maxNum++;
-                                            if (maxNum > 30) {
-                                                break;
-                                            }
-                                            String filename = imageFile.getName();
-                                            byte[] imageData = new byte[(int) imageFile.length()];
+                                            //发送文件名
+                                            String fileName = imageFile.getName();
+                                            bw.write(fileName + '\n');
+                                            bw.flush();
 
+                                            br.readLine();
+
+                                            //发送文件大小
+                                            long imageLen = imageFile.length();
+                                            bw.write(String.valueOf(imageLen) + '\n');
+                                            bw.flush();
+
+                                            br.readLine();
+
+                                            //读取文件
                                             FileInputStream fileInputStream = new FileInputStream(imageFile);
-                                            fileInputStream.read(imageData);
+                                            fileInputStream.read(imageData, 0, (int) imageLen);
                                             fileInputStream.close();
 
-                                            // 发送图片信息
-                                            objectOutputStream.writeObject(filename);
-                                            objectOutputStream.flush();
+                                            //发送图片数据
+                                            os.write(imageData, 0, (int) imageLen);
+                                            os.flush();
 
-                                            // 发送图片数据
-                                            objectOutputStream.writeObject(imageData);
-                                            objectOutputStream.flush();
-
-                                            // GC防止OOM
-                                            System.gc();
+                                            br.readLine();
                                         }
 
-                                        objectOutputStream.close();
-                                        clientSocket.close();
+                                        bw.close();
+                                        osw.close();
+                                        os.close();
+
+                                        br.close();
+                                        isr.close();
+                                        is.close();
+
+                                        client.close();
 
                                         MediaManager.getInstance().deleteMediaFiles(photoData, new CommonCallbacks.CompletionCallback() {
                                             @Override
