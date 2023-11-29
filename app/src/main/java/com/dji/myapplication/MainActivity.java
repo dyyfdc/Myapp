@@ -218,6 +218,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int adjustFlagFinished = 0;
     private int landFlag = 0;
     private boolean landProcess = true;
+    private int transferFlag = 0;
+    private boolean transferUpFlag = false;
 
     private long stime = 0;
     private long etime = 0;
@@ -466,6 +468,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         adjustFlag = Integer.parseInt(readNum[10]);
                                         adjustFlagFinished = Integer.parseInt(readNum[11]);
                                         landFlag = Integer.parseInt(readNum[12]);
+                                        transferFlag = Integer.parseInt(readNum[13]);
 
 
                                         // 记录无人机的状态信息
@@ -1751,219 +1754,230 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //-----------------------------------------------------------------------
                 showToast("Upload!");
 
-                // 添加媒体文件列表监听
-                MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
-                    @Override
-                    public void onUpdate(MediaFileListState mediaFileListState) {
-                        realMediaFileListState = mediaFileListState;
-                    }
-                });
-
-                MediaManager.getInstance().enable(new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        MediaManager.getInstance().pullMediaFileListFromCamera(new PullMediaFileListParam.Builder().filter(MediaFileFilter.PHOTO).build(), new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                showToast("Pull Success");
-                                pullSuccess = true;
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-                                showToast("Pull Fail");
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        System.out.println("Enable Fail");
-                    }
-                });
-
-                // 设置文件保存路径
-                File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
-                if(!fileDir.exists()) {
-                    fileDir.mkdirs();
-                }
-
                 if (firstAvoid) {
+                    firstAvoid = false;
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
+                            while (true) {
+                                if (transferFlag == 1) {
+                                    if (!transferUpFlag) {
+                                        transferUpFlag = true;
 
-                            try {
-                                //等待拉取多媒体文件
-                                while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
-
-                                }
-
-                                int num = 0;
-                                if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
-                                    MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
-                                    List<MediaFile> photoData = mediaFileListData.getData();
-                                    if (photoData.size() > 0) {
-                                        for (MediaFile mediaFile : photoData) {
-                                            while (sendPicFin) {
-
+                                        // 添加媒体文件列表监听
+                                        MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
+                                            @Override
+                                            public void onUpdate(MediaFileListState mediaFileListState) {
+                                                realMediaFileListState = mediaFileListState;
                                             }
-                                            num++;
-                                            showToast("Send: " + num);
-                                            sendPicFin = true;
-                                            String externalCacheDirPath = DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile" + "/" + mediaFile.getFileName());
-                                            FileOutputStream fos = new FileOutputStream(new File(externalCacheDirPath));
-                                            mediaFile.pullOriginalMediaFileFromCamera(0, new MediaFileDownloadListener() {
-                                                @Override
-                                                public void onStart() {
-                                                    stime = System.currentTimeMillis();
-                                                }
+                                        });
 
-                                                @Override
-                                                public void onProgress(long total, long current) {
-
-                                                }
-
-                                                @Override
-                                                public void onRealtimeDataUpdate(byte[] data, long position) {
-                                                    try {
-                                                        fos.write(data, 0, data.length);
-                                                    } catch (IOException e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                }
-
-                                                @Override
-                                                public void onFinish() {
-                                                    uploadFinish = true;
-                                                    etime = System.currentTimeMillis();
-                                                    long wasteTime = etime - stime;
-                                                    System.out.println("Send waste time: " + wasteTime);
-                                                    MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
-                                                        @Override
-                                                        public void onSuccess() {
-
-                                                        }
-
-                                                        @Override
-                                                        public void onFailure(@NonNull IDJIError error) {
-
-                                                        }
-                                                    });
-                                                    sendPicFin = false;
-                                                }
-
-                                                @Override
-                                                public void onFailure(IDJIError error) {
-
-                                                }
-                                            });
-                                        }
-
-                                        try {
-                                            Thread.sleep(1000);
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-
-                                        Socket client = new Socket("192.168.0.35", 8888);
-                                        showToast("Connect success!");
-
-                                        OutputStream os = client.getOutputStream();
-                                        OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
-                                        BufferedWriter bw = new BufferedWriter(osw);
-
-                                        InputStream is = client.getInputStream();
-                                        InputStreamReader isr = new InputStreamReader(is, "UTF-8");
-                                        BufferedReader br = new BufferedReader(isr);
-
-                                        List<File> imageFiles = getImageFiles(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
-                                        int imageCount = imageFiles.size();
-
-                                        bw.write(String.valueOf(imageCount) + '\n');
-                                        bw.flush();
-
-                                        br.readLine();
-
-                                        // 传输每张图片
-                                        byte[] imageData = new byte[10 * 1024 * 1024];
-                                        for (File imageFile : imageFiles) {
-                                            //发送文件名
-                                            String fileName = imageFile.getName();
-                                            bw.write(fileName + '\n');
-                                            bw.flush();
-
-                                            br.readLine();
-
-                                            //发送文件大小
-                                            long imageLen = imageFile.length();
-                                            bw.write(String.valueOf(imageLen) + '\n');
-                                            bw.flush();
-
-                                            br.readLine();
-
-                                            //读取文件
-                                            FileInputStream fileInputStream = new FileInputStream(imageFile);
-                                            fileInputStream.read(imageData, 0, (int) imageLen);
-                                            fileInputStream.close();
-
-                                            //发送图片数据
-                                            os.write(imageData, 0, (int) imageLen);
-                                            os.flush();
-
-                                            br.readLine();
-                                        }
-
-                                        bw.close();
-                                        osw.close();
-                                        os.close();
-
-                                        br.close();
-                                        isr.close();
-                                        is.close();
-
-                                        client.close();
-
-                                        MediaManager.getInstance().deleteMediaFiles(photoData, new CommonCallbacks.CompletionCallback() {
+                                        MediaManager.getInstance().enable(new CommonCallbacks.CompletionCallback() {
                                             @Override
                                             public void onSuccess() {
-                                                System.out.println("清空数据成功！");
+                                                MediaManager.getInstance().pullMediaFileListFromCamera(new PullMediaFileListParam.Builder().filter(MediaFileFilter.PHOTO).build(), new CommonCallbacks.CompletionCallback() {
+                                                    @Override
+                                                    public void onSuccess() {
+                                                        showToast("Pull Success");
+                                                        pullSuccess = true;
+                                                    }
+
+                                                    @Override
+                                                    public void onFailure(@NonNull IDJIError error) {
+                                                        showToast("Pull Fail");
+                                                    }
+                                                });
                                             }
 
                                             @Override
                                             public void onFailure(@NonNull IDJIError error) {
-                                                System.out.println("清空数据失败！");
+                                                System.out.println("Enable Fail");
                                             }
                                         });
 
-                                        for(File imageFile : imageFiles) {
-                                            if (imageFile.isFile()) {
-                                                imageFile.delete();
+                                        // 设置文件保存路径
+                                        File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                                        if(!fileDir.exists()) {
+                                            fileDir.mkdirs();
+                                        }
+
+                                        try {
+                                            //等待拉取多媒体文件
+                                            while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
+
                                             }
+
+                                            int num = 0;
+                                            if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
+                                                MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
+                                                List<MediaFile> photoData = mediaFileListData.getData();
+                                                if (photoData.size() > 0) {
+                                                    for (MediaFile mediaFile : photoData) {
+                                                        while (sendPicFin) {
+
+                                                        }
+                                                        num++;
+                                                        showToast("Send: " + num);
+                                                        sendPicFin = true;
+                                                        String externalCacheDirPath = DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile" + "/" + mediaFile.getFileName());
+                                                        FileOutputStream fos = new FileOutputStream(new File(externalCacheDirPath));
+                                                        mediaFile.pullOriginalMediaFileFromCamera(0, new MediaFileDownloadListener() {
+                                                            @Override
+                                                            public void onStart() {
+                                                                stime = System.currentTimeMillis();
+                                                            }
+
+                                                            @Override
+                                                            public void onProgress(long total, long current) {
+
+                                                            }
+
+                                                            @Override
+                                                            public void onRealtimeDataUpdate(byte[] data, long position) {
+                                                                try {
+                                                                    fos.write(data, 0, data.length);
+                                                                } catch (IOException e) {
+                                                                    e.printStackTrace();
+                                                                }
+                                                            }
+
+                                                            @Override
+                                                            public void onFinish() {
+                                                                uploadFinish = true;
+                                                                etime = System.currentTimeMillis();
+                                                                long wasteTime = etime - stime;
+                                                                System.out.println("Send waste time: " + wasteTime);
+                                                                MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                                                    @Override
+                                                                    public void onSuccess() {
+
+                                                                    }
+
+                                                                    @Override
+                                                                    public void onFailure(@NonNull IDJIError error) {
+
+                                                                    }
+                                                                });
+                                                                sendPicFin = false;
+                                                            }
+
+                                                            @Override
+                                                            public void onFailure(IDJIError error) {
+
+                                                            }
+                                                        });
+                                                    }
+
+                                                    try {
+                                                        Thread.sleep(500);
+                                                    } catch (InterruptedException e) {
+                                                        e.printStackTrace();
+                                                    }
+
+                                                    Socket client = new Socket("192.168.3.202", 8888);
+                                                    showToast("Connect success!");
+
+                                                    OutputStream os = client.getOutputStream();
+                                                    OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
+                                                    BufferedWriter bw = new BufferedWriter(osw);
+
+                                                    InputStream is = client.getInputStream();
+                                                    InputStreamReader isr = new InputStreamReader(is, "UTF-8");
+                                                    BufferedReader br = new BufferedReader(isr);
+
+                                                    List<File> imageFiles = getImageFiles(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                                                    int imageCount = imageFiles.size();
+
+                                                    bw.write(String.valueOf(imageCount) + '\n');
+                                                    bw.flush();
+
+                                                    br.readLine();
+
+                                                    // 传输每张图片
+                                                    byte[] imageData = new byte[10 * 1024 * 1024];
+                                                    for (File imageFile : imageFiles) {
+                                                        //发送文件名
+                                                        String fileName = imageFile.getName();
+                                                        bw.write(fileName + '\n');
+                                                        bw.flush();
+
+                                                        br.readLine();
+
+                                                        //发送文件大小
+                                                        long imageLen = imageFile.length();
+                                                        bw.write(String.valueOf(imageLen) + '\n');
+                                                        bw.flush();
+
+                                                        br.readLine();
+
+                                                        //读取文件
+                                                        FileInputStream fileInputStream = new FileInputStream(imageFile);
+                                                        fileInputStream.read(imageData, 0, (int) imageLen);
+                                                        fileInputStream.close();
+
+                                                        //发送图片数据
+                                                        os.write(imageData, 0, (int) imageLen);
+                                                        os.flush();
+
+                                                        br.readLine();
+                                                    }
+
+                                                    bw.close();
+                                                    osw.close();
+                                                    os.close();
+
+                                                    br.close();
+                                                    isr.close();
+                                                    is.close();
+
+                                                    client.close();
+
+                                                    MediaManager.getInstance().deleteMediaFiles(photoData, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            System.out.println("清空数据成功！");
+                                                        }
+
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+                                                            System.out.println("清空数据失败！");
+                                                        }
+                                                    });
+
+                                                    for(File imageFile : imageFiles) {
+                                                        if (imageFile.isFile()) {
+                                                            imageFile.delete();
+                                                        }
+                                                    }
+
+                                                    showToast("Transfer Success!");
+
+
+                                                } else {
+                                                    if (uploadFinish) {
+                                                        MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                                            @Override
+                                                            public void onSuccess() {
+
+                                                            }
+
+                                                            @Override
+                                                            public void onFailure(@NonNull IDJIError error) {
+
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            }
+
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
                                         }
 
-                                        showToast("Transfer Success!");
-
-
-                                    } else {
-                                        if (uploadFinish) {
-                                            MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
-                                                @Override
-                                                public void onSuccess() {
-
-                                                }
-
-                                                @Override
-                                                public void onFailure(@NonNull IDJIError error) {
-
-                                                }
-                                            });
-                                        }
                                     }
+                                } else {
+                                    transferUpFlag = false;
                                 }
-
-                            } catch (IOException e) {
-                                e.printStackTrace();
                             }
                         }
                     }).start();
