@@ -370,7 +370,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (null == mSendVirtualStickDataTimer) {
                     mSendVirtualStickDataTask = new SendVirtualStickDataTask();
                     mSendVirtualStickDataTimer = new Timer();
-                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 200);
+                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 100);
                 }
 
                 KeyManager.getInstance().listen(KeyTools.createKey(FlightControllerKey.KeyConnection), this, new CommonCallbacks.KeyListener<Boolean>() {
@@ -2048,7 +2048,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (null == mSendVirtualStickDataTimer) {
                     mSendVirtualStickDataTask = new SendVirtualStickDataTask();
                     mSendVirtualStickDataTimer = new Timer();
-                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 200);
+                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 100);
                 }
 
             }
@@ -2075,7 +2075,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (null == mSendVirtualStickDataTimer) {
                     mSendVirtualStickDataTask = new SendVirtualStickDataTask();
                     mSendVirtualStickDataTimer = new Timer();
-                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 0, 200);
+                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 100);
                 }
 
             }
