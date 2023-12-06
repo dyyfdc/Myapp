@@ -1763,6 +1763,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 if (transferFlag == 1) {
                                     if (!transferUpFlag) {
                                         transferUpFlag = true;
+                                        showToast("Transfer Start!");
 
                                         // 添加媒体文件列表监听
                                         MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
