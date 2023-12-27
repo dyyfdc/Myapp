@@ -7,11 +7,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import dji.sdk.keyvalue.key.CameraKey;
-import dji.sdk.keyvalue.key.DJIKey;
 import dji.sdk.keyvalue.key.FlightControllerKey;
 import dji.sdk.keyvalue.key.GimbalKey;
 import dji.sdk.keyvalue.key.KeyTools;
-import dji.sdk.keyvalue.msdkkeyinfo.KeyCameraType;
 import dji.sdk.keyvalue.value.camera.CameraExposureMode;
 import dji.sdk.keyvalue.value.camera.CameraFocusMode;
 import dji.sdk.keyvalue.value.camera.CameraISO;
@@ -19,11 +17,9 @@ import dji.sdk.keyvalue.value.camera.CameraMode;
 import dji.sdk.keyvalue.value.camera.CameraShutterSpeed;
 import dji.sdk.keyvalue.value.camera.CameraStorageInfos;
 import dji.sdk.keyvalue.value.camera.CameraVideoStreamSourceType;
-import dji.sdk.keyvalue.value.camera.GeneratedMediaFileInfo;
 import dji.sdk.keyvalue.value.common.Attitude;
 import dji.sdk.keyvalue.value.common.CameraLensType;
 import dji.sdk.keyvalue.value.common.ComponentIndexType;
-import dji.sdk.keyvalue.value.common.DoublePoint2D;
 import dji.sdk.keyvalue.value.common.EmptyMsg;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.FlightControlAuthorityChangeReason;
@@ -34,8 +30,6 @@ import dji.sdk.keyvalue.value.flightcontroller.VirtualStickFlightControlParam;
 import dji.sdk.keyvalue.value.flightcontroller.YawControlMode;
 import dji.sdk.keyvalue.value.gimbal.GimbalAngleRotation;
 import dji.sdk.keyvalue.value.gimbal.GimbalAngleRotationMode;
-import dji.sdk.keyvalue.value.gimbal.GimbalAttitudeRange;
-import dji.sdk.keyvalue.value.gimbal.GimbalMode;
 import dji.sdk.keyvalue.value.payload.WidgetType;
 import dji.sdk.keyvalue.value.payload.WidgetValue;
 import dji.v5.common.callback.CommonCallbacks;
@@ -91,22 +85,17 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.Key;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
@@ -154,7 +143,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean virtualFlag = false;
     // 跟随开启标志位
     private boolean trackOn = false;
-    private boolean trackFlag = true;
     // 第一次开启跟随模式标志位
     private boolean firstTrack = true;
 
@@ -168,8 +156,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private float lidarZ;
     private double focusTargetX;
     private double focusTargetY;
-    private double focusTargetX_;
-    private double focusTargetY_;
     private int photoFlag = 0;
     private boolean photoUpFlag = false;
 
@@ -187,31 +173,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String readText;
     private String readNum[];
 
-    private String photoText;
-    private String photoReadNum[];
-
-    private boolean frameOn = false;
-    private boolean firstFrame = true;
-    private byte[] videoData;
-
     private boolean liveOn = false;
     private boolean firstLive = true;
 
     private boolean payloadOn = false;
 
     private int SDCapacity = 0;
-    private int mediaIndex = 0;
-    private int lastMediaIndex = 0;
-    private boolean upFlag = false;
-    private int canPhoto = 0;
-    /*private Socket photoSocket;*/
-    private boolean firstPhoto = true;
     private MediaFileListState realMediaFileListState;
     private boolean firstAvoid = true;
     private boolean uploadFinish = true;
     private boolean pullSuccess = false;
-    private boolean firstGimbal = true;
-    private boolean gimbalUpFlag = false;
     private int focusValue = 0;
     private int adjustFlag = 0;
     private int gimbalAdjustFlagFinished = 0;
@@ -416,19 +387,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                     while(true) {
 
-                                        /*KeyManager.getInstance().getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftAttitude), new CommonCallbacks.CompletionCallbackWithParam<Attitude>() {
-                                            @Override
-                                            public void onSuccess(Attitude attitude) {
-                                                realYaw = attitude.getYaw();
-                                                realYawStr = String.valueOf(realYaw);
-                                            }
-
-                                            @Override
-                                            public void onFailure(@NonNull IDJIError error) {
-
-                                            }
-                                        });*/
-
                                         // 获取无人机的偏航信息，偏航需要与无人车的偏航对齐
                                         mAttitude = KeyManager.getInstance().getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftAttitude));
                                         realYaw = mAttitude.getYaw();
@@ -601,72 +559,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     }
                                                 });
 
-                                                // 设置对焦模式AFS
-                                                /*KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AF, new CommonCallbacks.CompletionCallback() {
-                                                    @Override
-                                                    public void onSuccess() {
-                                                        // 设置成功后进行对焦
-                                                        *//*System.out.println("-----------对焦：CameraFocusMode.MANUAL设置成功-----------");*//*
-                                                        DoublePoint2D targetPos = new DoublePoint2D(0.5, 0.5);
-                                                        targetPos.setX(focusTargetX);
-                                                        targetPos.setY(focusTargetY);
-                                                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusTarget), targetPos, new CommonCallbacks.CompletionCallback() {
-                                                            @Override
-                                                            public void onSuccess() {
-                                                                // 设置对焦点成功后执行拍照动作
-                                                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
-                                                                    @Override
-                                                                    public void onSuccess() {
-                                                                        // 获取当前内存信息
-                                                                        KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
-                                                                            @Override
-                                                                            public void onSuccess(CameraStorageInfos cameraStorageInfos) {
-                                                                                SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
-                                                                                // 内存大于100MB时才会进行拍照
-                                                                                if (SDCapacity > 100) {
-                                                                                    KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                                                        @Override
-                                                                                        public void onSuccess(EmptyMsg emptyMsg) {
-                                                                                            showToast("Photo Success");
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onFailure(@NonNull IDJIError error) {
-                                                                                            showToast("Photo Fail");
-                                                                                        }
-                                                                                    });
-                                                                                }
-                                                                            }
-
-                                                                            @Override
-                                                                            public void onFailure(@NonNull IDJIError error) {
-
-                                                                            }
-                                                                        });
-
-                                                                    }
-
-                                                                    @Override
-                                                                    public void onFailure(@NonNull IDJIError error) {
-                                                                        showToast("set fail!!!");
-                                                                    }
-                                                                });
-                                                            }
-
-                                                            @Override
-                                                            public void onFailure(@NonNull IDJIError error) {
-                                                                *//*System.out.println("----------------设置对焦目标点失败----------------");*//*
-                                                            }
-                                                        });
-
-                                                    }
-
-                                                    @Override
-                                                    public void onFailure(@NonNull IDJIError error) {
-                                                        *//*System.out.println("-----------对焦：CameraFocusMode.MANUAL设置失败-----------");*//*
-                                                    }
-                                                });*/
-
                                                 photoUpFlag = true;
                                             }
                                         } else {
@@ -696,18 +588,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 云台控制
             case R.id.btn_gimbal:
 
-                /*KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AFC, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        System.out.println("-----------对焦：CameraFocusMode.MANUAL设置成功-----------");
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        System.out.println("-----------对焦：CameraFocusMode.MANUAL设置失败-----------");
-                    }
-                });*/
-
                 // 设置云台角度Pitch和Yaw
                 GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
                 gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
@@ -725,207 +605,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     }
                 });
-
-                /*List<StreamSource> frame = VideoStreamManager.getInstance().getAvailableStreamSources();
-                IVideoChannel availableVideoChannel = VideoStreamManager.getInstance().getAvailableVideoChannel(VideoChannelType.PRIMARY_STREAM_CHANNEL);
-
-                if (frame != null) {
-                    if (!frameOn) {
-                        availableVideoChannel.startChannel(frame.get(0), new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                showToast("Get Video Success");
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-                                showToast("Get Video Fail");
-                            }
-                        });
-                        frameOn = true;
-
-                        availableVideoChannel.addStreamDataListener(new StreamDataListener() {
-                            @Override
-                            public void onReceive(IVideoFrame videoFrame) {
-                                videoData = videoFrame.getData();
-                            }
-                        });
-
-
-                        if (firstFrame) {
-                            VideoDecoder videoDecoder = new VideoDecoder(this.getBaseContext(), availableVideoChannel.getVideoChannelType(), DecoderOutputMode.SURFACE_MODE, mSurfaceView);
-
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-
-                                    try {
-                                        Socket socketStream = new Socket("192.168.3.206", 12345);
-                                        showToast("Connect Success");
-
-                                        OutputStream osStream = socketStream.getOutputStream();
-
-                                        OutputStreamWriter oswStream = new OutputStreamWriter(osStream, "UTF-8");
-
-                                        BufferedWriter bwSteam = new BufferedWriter(oswStream);
-
-                                        try {
-                                            Thread.currentThread().sleep(500);
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-
-                                        while(true) {
-                                            bwSteam.write(String.valueOf(videoData.length) + ",0");
-                                            bwSteam.write(new String(videoData) + '\n');
-                                            bwSteam.flush();
-
-                                            try {
-                                                Thread.currentThread().sleep(25);
-                                            } catch (InterruptedException e) {
-                                                e.printStackTrace();
-                                            }
-
-                                        }
-
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                }
-                            }).start();
-
-                            firstFrame = false;
-                        }
-
-                    } else {
-                        availableVideoChannel.closeChannel(new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                showToast("Close Video Success");
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-                                showToast("Close Video Fail");
-                            }
-                        });
-                        frameOn = false;
-                    }
-                } else {
-                    showToast("Get Video Fail");
-                }
-                showToast("Get Video Fail");
-
-                showToast("Gimbal");
-                KeyManager.getInstance().listen(KeyTools.createKey(GimbalKey.KeyConnection), this, new CommonCallbacks.KeyListener<Boolean>() {
-                    @Override
-                    public void onValueChange(@Nullable Boolean oldValue, @Nullable Boolean newValue) {
-
-                    }
-                });
-
-                KeyManager.getInstance().getValue(KeyTools.createKey(GimbalKey.KeyGimbalAttitude), new CommonCallbacks.CompletionCallbackWithParam<Attitude>() {
-                    @Override
-                    public void onSuccess(Attitude attitude) {
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-
-                KeyManager.getInstance().getValue(KeyTools.createKey(GimbalKey.KeyGimbalAttitudeRange), new CommonCallbacks.CompletionCallbackWithParam<GimbalAttitudeRange>() {
-                    @Override
-                    public void onSuccess(GimbalAttitudeRange gimbalAttitudeRange) {
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-
-                KeyManager.getInstance().getValue(KeyTools.createKey(GimbalKey.KeyGimbalMode), new CommonCallbacks.CompletionCallbackWithParam<GimbalMode>() {
-                    @Override
-                    public void onSuccess(GimbalMode gimbalMode) {
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-
-                GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
-                gimbalAngleRotation.setMode(GimbalAngleRotationMode.RELATIVE_ANGLE);
-                gimbalAngleRotation.setPitch(0.0);
-                gimbalAngleRotation.setYaw(0.0);
-
-                KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                    @Override
-                    public void onSuccess(EmptyMsg emptyMsg) {
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-
-                if (firstGimbal) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Socket gimbalSocket = new Socket("192.168.0.202", 8086);
-                                showToast("Connect Success");
-                                InputStream gimbalIs = gimbalSocket.getInputStream();
-                                InputStreamReader gimbalIsr = new InputStreamReader(gimbalIs, "UTF-8");
-                                BufferedReader gimbalBr = new BufferedReader(gimbalIsr);
-                                while(true) {
-                                    String gimbalText = gimbalBr.readLine();
-                                    System.out.println(gimbalText);
-                                    String[] gimbalPitchText = gimbalText.split("/");
-                                    if (gimbalPitchText[0].equals("2")) {
-                                        if (!gimbalUpFlag) {
-                                            double gimbalPitch = (0.5 - Double.parseDouble(gimbalPitchText[1])) * 40;
-                                            if (gimbalPitch < -90) {
-                                                gimbalPitch = -90;
-                                            }
-                                            if (gimbalPitch > 35) {
-                                                gimbalPitch = 35;
-                                            }
-                                            gimbalAngleRotation.setPitch(gimbalPitch);
-                                            KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                @Override
-                                                public void onSuccess(EmptyMsg emptyMsg) {
-
-                                                }
-
-                                                @Override
-                                                public void onFailure(@NonNull IDJIError error) {
-
-                                                }
-                                            });
-                                            gimbalUpFlag = true;
-                                        }
-                                    } else {
-                                        gimbalUpFlag = false;
-                                    }
-
-                                }
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }).start();
-                }*/
 
                 break;
 
@@ -1000,10 +679,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 showToast("Start Live Fail");
                             }
                         });
-                        /*iLiveStreamManager.setVideoChannelType(VideoChannelType.PRIMARY_STREAM_CHANNEL);
-                        iLiveStreamManager.setLiveStreamQuality(StreamQuality.FULL_HD);
-                        iLiveStreamManager.setLiveVideoBitrateMode(LiveVideoBitrateMode.AUTO);
-                        iLiveStreamManager.setLiveVideoBitrate(9600);*/
                         liveOn = true;
                     } else {
                         iLiveStreamManager.stopStream(new CommonCallbacks.CompletionCallback() {
@@ -1216,542 +891,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 });
 
-                // 建立与识别电脑的TCP连接，用于单独拍照，流程与Track中的流程一样
-                /*new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            ServerSocket photoCam = new ServerSocket(8001);
-                            Socket photoSocket = photoCam.accept();
-                            showToast("Connect Success");
-                            InputStream photoIs = photoSocket.getInputStream();
-                            BufferedReader photoBr = new BufferedReader(new InputStreamReader(photoIs));
-                            while (true) {
-                                String photoMessage = photoBr.readLine();
-                                System.out.println(photoMessage);
-                                photoReadNum = photoMessage.split("/");
-                                photoFlag = Integer.parseInt(photoReadNum[0]);
-                                focusTargetX_ = Double.parseDouble(photoReadNum[1]);
-                                focusTargetY_ = Double.parseDouble(photoReadNum[2]);
-                                if(photoFlag == 2) {
-                                    System.out.println("进来了！！！！");
-                                    if (!photoUpFlag) {
-                                        try {
-                                            Thread.sleep(100);
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-
-                                        KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AF, new CommonCallbacks.CompletionCallback() {
-                                            @Override
-                                            public void onSuccess() {
-                                                System.out.println("-----------对焦：CameraFocusMode.MANUAL设置成功-----------");
-                                                DoublePoint2D targetPos = new DoublePoint2D(0.5, 0.5);
-                                                targetPos.setX(focusTargetX_);
-                                                targetPos.setY(focusTargetY_);
-                                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusTarget), targetPos, new CommonCallbacks.CompletionCallback() {
-                                                    @Override
-                                                    public void onSuccess() {
-                                                        System.out.println("----------------设置对焦目标点成功----------------");
-                                                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
-                                                            @Override
-                                                            public void onSuccess() {
-                                                                KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
-                                                                    @Override
-                                                                    public void onSuccess(CameraStorageInfos cameraStorageInfos) {
-                                                                        SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
-                                                                        if (SDCapacity > 100) {
-                                                                            KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                                                @Override
-                                                                                public void onSuccess(EmptyMsg emptyMsg) {
-                                                                                    showToast("Photo Success");
-                                                                                }
-
-                                                                                @Override
-                                                                                public void onFailure(@NonNull IDJIError error) {
-                                                                                    showToast("Photo Fail");
-                                                                                }
-                                                                            });
-                                                                        }
-                                                                    }
-
-                                                                    @Override
-                                                                    public void onFailure(@NonNull IDJIError error) {
-
-                                                                    }
-                                                                });
-
-                                                            }
-
-                                                            @Override
-                                                            public void onFailure(@NonNull IDJIError error) {
-                                                                showToast("set fail!!!");
-                                                            }
-                                                        });
-                                                    }
-
-                                                    @Override
-                                                    public void onFailure(@NonNull IDJIError error) {
-                                                        System.out.println("----------------设置对焦目标点失败----------------");
-                                                    }
-                                                });
-
-                                            }
-
-                                            @Override
-                                            public void onFailure(@NonNull IDJIError error) {
-                                                System.out.println("-----------对焦：CameraFocusMode.MANUAL设置失败-----------");
-                                            }
-                                        });
-
-                                        photoUpFlag = true;
-                                    }
-                                } else {
-                                    photoUpFlag = false;
-                                }
-                            }
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();*/
-
-                // ISO参数调节
-                /*KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.MANUAL, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        *//*System.out.println("-----------ISO:CameraExposureMode.MANUAL设置成功-----------");*//*
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        *//*System.out.println("-----------ISO:CameraExposureMode.MANUAL设置失败-----------");*//*
-                    }
-                });
-                KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyISO, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraISO.ISO_400, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        *//*System.out.println("-----------ISO:CameraISO.ISO_50设置成功-----------");*//*
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        *//*System.out.println("-----------ISO:CameraISO.ISO_50设置失败-----------");*//*
-                    }
-                });*/
-
-                // 快门
-                /*KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyShutterSpeed, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraShutterSpeed.SHUTTER_SPEED1_200, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        *//*System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_1DOT25设置成功-----------");*//*
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        *//*System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_1DOT25设置失败-----------");*//*
-                    }
-                });*/
-
-                // 对焦
-                /*KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        *//*System.out.println("-----------对焦：CameraVideoStreamSourceType.ZOOM_CAMERA设置成功-----------");*//*
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        *//*System.out.println("-----------对焦：CameraVideoStreamSourceType.ZOOM_CAMERA设置失败-----------");*//*
-                    }
-                });
-                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });*/
-                /*KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AF, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        *//*System.out.println("-----------对焦：CameraFocusMode.MANUAL设置成功-----------");*//*
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        *//*System.out.println("-----------对焦：CameraFocusMode.MANUAL设置失败-----------");*//*
-                    }
-                });
-                DoublePoint2D targetPos = new DoublePoint2D(0.5, 0.5);
-                targetPos.setX(0.5);
-                targetPos.setY(0.5);
-                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusTarget), targetPos, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        System.out.println("----------------设置对焦目标点成功----------------");
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        System.out.println("----------------设置对焦目标点失败----------------");
-                    }
-                });*/
-                /*KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingValue), 10, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        *//*System.out.println("-----------对焦：CameraKey.KeyCameraFocusRingValue设置成功-----------");*//*
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        *//*System.out.println("-----------对焦：CameraKey.KeyCameraFocusRingValue设置失败-----------");*//*
-                    }
-                });*/
-
-                // 拍照
-               /* KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
-                            @Override
-                            public void onSuccess(CameraStorageInfos cameraStorageInfos) {
-                                SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
-                                if (SDCapacity > 100) {
-                                    KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                        @Override
-                                        public void onSuccess(EmptyMsg emptyMsg) {
-                                            showToast("Photo Success");
-                                        }
-
-                                        @Override
-                                        public void onFailure(@NonNull IDJIError error) {
-                                            showToast("Photo Fail");
-                                        }
-                                    });
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-
-                            }
-                        });
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        showToast("set fail!!!");
-                    }
-                });*/
-
-                /*GimbalAngleRotation gimbalAngleRotationPhoto = new GimbalAngleRotation();
-                gimbalAngleRotationPhoto.setMode(GimbalAngleRotationMode.RELATIVE_ANGLE);
-                gimbalAngleRotationPhoto.setPitch(0.0);
-                gimbalAngleRotationPhoto.setYaw(0.0);
-
-                KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotationPhoto, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                    @Override
-                    public void onSuccess(EmptyMsg emptyMsg) {
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-                if (firstPhoto) {
-                    KeyManager.getInstance().listen(KeyTools.createKey(CameraKey.KeyConnection), this, new CommonCallbacks.KeyListener<Boolean>() {
-                        @Override
-                        public void onValueChange(@Nullable Boolean oldValue, @Nullable Boolean newValue) {
-
-                        }
-                    });
-
-                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onSuccess() {
-
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull IDJIError error) {
-
-                        }
-                    });
-
-                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onSuccess() {
-
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull IDJIError error) {
-
-                        }
-                    });
-
-
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                photoSocket = new Socket("192.168.3.202", 8086);
-                                showToast("Connect Success");
-                                InputStream photoIs = photoSocket.getInputStream();
-                                InputStreamReader photoIsr = new InputStreamReader(photoIs, "UTF-8");
-                                BufferedReader photoBr = new BufferedReader(photoIsr);
-
-                                long startTime = System.currentTimeMillis();
-
-                                while(true) {
-                                    String photoFlag = photoBr.readLine();
-                                    String[] photoText = photoFlag.split("/");
-                                    System.out.println(photoFlag);
-                                    if (photoText[0] != null && photoText[0].equals("2")) {
-                                        long spendTime = System.currentTimeMillis() - startTime;
-                                        if (!upFlag && spendTime > 3000) {
-                                            startTime = System.currentTimeMillis();
-                                            double pitchAdj = (0.5 - Double.parseDouble(photoText[1])) * 30;
-                                            gimbalAngleRotationPhoto.setPitch(pitchAdj);
-
-                                            KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotationPhoto, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                @Override
-                                                public void onSuccess(EmptyMsg emptyMsg) {
-                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 2.0, new CommonCallbacks.CompletionCallback() {
-                                                        @Override
-                                                        public void onSuccess() {
-                                                            KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
-                                                                @Override
-                                                                public void onSuccess() {
-                                                                    KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
-                                                                        @Override
-                                                                        public void onSuccess(CameraStorageInfos cameraStorageInfos) {
-                                                                            SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
-                                                                            if (SDCapacity > 100) {
-                                                                                KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                                                    @Override
-                                                                                    public void onSuccess(EmptyMsg emptyMsg) {
-                                                                                        showToast("Photo Success");
-                                                                                    }
-
-                                                                                    @Override
-                                                                                    public void onFailure(@NonNull IDJIError error) {
-                                                                                        showToast("Photo Fail");
-                                                                                    }
-                                                                                });
-                                                                            }
-                                                                        }
-
-                                                                        @Override
-                                                                        public void onFailure(@NonNull IDJIError error) {
-
-                                                                        }
-                                                                    });
-
-                                                                }
-
-                                                                @Override
-                                                                public void onFailure(@NonNull IDJIError error) {
-                                                                    showToast("set fail!!!");
-                                                                }
-                                                            });
-                                                        }
-
-                                                        @Override
-                                                        public void onFailure(@NonNull IDJIError error) {
-
-                                                        }
-                                                    });
-                                                }
-
-                                                @Override
-                                                public void onFailure(@NonNull IDJIError error) {
-
-                                                }
-                                            });
-                                            upFlag = true;
-                                        }
-                                    } else {
-                                        upFlag = false;
-                                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
-                                            @Override
-                                            public void onSuccess() {
-
-                                            }
-
-                                            @Override
-                                            public void onFailure(@NonNull IDJIError error) {
-
-                                            }
-                                        });
-                                    }
-                                }
-
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }).start();
-                    firstPhoto = false;
-                }*/
-
                 break;
 
             // 拉取图片并下载
             case R.id.btn_upload:
 
-                /*showToast("Upload");
-                // 添加媒体文件列表监听
-                MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
-                    @Override
-                    public void onUpdate(MediaFileListState mediaFileListState) {
-                        realMediaFileListState = mediaFileListState;
-                    }
-                });
-
-                // 设置文件保存路径
-                File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
-                if(!fileDir.exists()) {
-                    fileDir.mkdirs();
-                }
-
-                // 监听是否有新文件产生
-                KeyManager.getInstance().listen(KeyTools.createKey(CameraKey.KeyNewlyGeneratedMediaFile), this, new CommonCallbacks.KeyListener<GeneratedMediaFileInfo>() {
-                    @Override
-                    public void onValueChange(@Nullable GeneratedMediaFileInfo oldValue, @Nullable GeneratedMediaFileInfo newValue) {
-                        if(newValue != null) {
-                            mediaIndex = newValue.getIndex();
-                            MediaManager.getInstance().enable(new CommonCallbacks.CompletionCallback() {
-                                @Override
-                                public void onSuccess() {
-                                    stime = System.currentTimeMillis();
-                                    MediaManager.getInstance().pullMediaFileListFromCamera(new PullMediaFileListParam.Builder().filter(MediaFileFilter.PHOTO).build(), new CommonCallbacks.CompletionCallback() {
-                                        @Override
-                                        public void onSuccess() {
-                                            showToast("Pull Success");
-                                            pullSuccess = true;
-                                        }
-
-                                        @Override
-                                        public void onFailure(@NonNull IDJIError error) {
-                                            showToast("Pull Fail");
-                                        }
-                                    });
-                                }
-
-                                @Override
-                                public void onFailure(@NonNull IDJIError error) {
-                                    System.out.println("Enable Fail");
-                                }
-                            });
-                        }
-                    }
-                });
-
-                // 单独开一个线程根据监听的标志去下载图片到遥控器
-                if (firstAvoid) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-
-                            while(true) {
-                                if(mediaIndex != lastMediaIndex && pullSuccess == true) {
-                                    lastMediaIndex = mediaIndex;
-                                    pullSuccess = false;
-                                    while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
-                                        *//*System.out.println("-----------" + realMediaFileListState + "-----------");*//*
-                                    }
-                                    etime = System.currentTimeMillis();
-                                    long wasteTime = etime - stime;
-                                    System.out.println("-----------拉取图片耗时： " + wasteTime + "ms");
-
-                                    if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
-                                        MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
-                                        List<MediaFile> photoData = mediaFileListData.getData();
-                                        if (photoData.size() > 0) {
-                                            *//*System.out.println("----------" + "size: " + photoData.size() + "----------");*//*
-                                            MediaFile mediaFile = photoData.get(photoData.size() - 1);
-                                            String externalCacheDirPath = DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile" + "/" + String.valueOf(photoData.size()) + ".jpg");
-                                            try {
-                                                FileOutputStream fos = new FileOutputStream(new File(externalCacheDirPath));
-                                                mediaFile.pullOriginalMediaFileFromCamera(0, new MediaFileDownloadListener() {
-                                                    @Override
-                                                    public void onStart() {
-
-                                                    }
-
-                                                    @Override
-                                                    public void onProgress(long total, long current) {
-                                                        System.out.println("----------" + "总长度：" + total + " 当前长度： " + current + "----------");
-                                                    }
-
-                                                    @Override
-                                                    public void onRealtimeDataUpdate(byte[] data, long position) {
-                                                        uploadFinish = false;
-                                                        try {
-                                                            fos.write(data, 0, data.length);
-                                                        } catch (IOException e) {
-                                                            e.printStackTrace();
-                                                        }
-                                                    }
-
-                                                    @Override
-                                                    public void onFinish() {
-                                                        uploadFinish = true;
-                                                        MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
-                                                            @Override
-                                                            public void onSuccess() {
-
-                                                            }
-
-                                                            @Override
-                                                            public void onFailure(@NonNull IDJIError error) {
-
-                                                            }
-                                                        });
-                                                    }
-
-                                                    @Override
-                                                    public void onFailure(IDJIError error) {
-
-                                                    }
-                                                });
-                                            } catch (FileNotFoundException e) {
-                                                e.printStackTrace();
-                                            }
-                                        } else {
-                                            if (uploadFinish) {
-                                                MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
-                                                    @Override
-                                                    public void onSuccess() {
-
-                                                    }
-
-                                                    @Override
-                                                    public void onFailure(@NonNull IDJIError error) {
-
-                                                    }
-                                                });
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }).start();
-                    firstAvoid = false;
-                }*/
-
-                //-----------------------------------------------------------------------
                 showToast("Upload!");
 
                 if (firstAvoid) {
