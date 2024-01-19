@@ -159,6 +159,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int photoFlag = 0;
     private boolean photoUpFlag = false;
 
+    private int sameCount = 0;
+    private String lastRecData = "";
+    private boolean isDisConnect = false;
+
     private Attitude mAttitude = new Attitude(0.0, 0.0, 0.0);
     private double realYaw = 0.0;
     private String realYawStr = "0";
@@ -412,6 +416,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         readText = br.readLine();
                                         /*System.out.println(readText);*/
                                         readNum = readText.split("/");
+
+                                        // 断联逻辑
+                                        if (readNum[0].equals(lastRecData)) {
+                                            sameCount++;
+                                            if (sameCount == 20) {
+                                                isDisConnect = true;
+                                            }
+                                        } else {
+                                            sameCount = 0;
+                                            isDisConnect = false;
+                                        }
+                                        lastRecData = readNum[0];
 
                                         mRoll = Float.parseFloat(readNum[0]);
                                         mYaw = Float.parseFloat(readNum[1]);
@@ -1306,7 +1322,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void run() {
             if(trackOn) {
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true);
-                VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(mRoll), new Double(mPitch), new Double(mYaw), new Double(mThrottle), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
+                if (isDisConnect) {
+                    VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(0.0), new Double(0.0), new Double(0.0), new Double(0.0), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
+                } else {
+                    VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(mRoll), new Double(mPitch), new Double(mYaw), new Double(mThrottle), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
+                }
             } else {
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(false);
                 VirtualStickManager.getInstance().getLeftStick().setHorizontalPosition((int)mYaw);
