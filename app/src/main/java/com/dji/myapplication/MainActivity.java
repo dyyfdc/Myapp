@@ -1310,18 +1310,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void run() {
             if(trackOn) {
                 // 断联逻辑
-                String curRecData = readNum[5];
-                if (curRecData.equals(lastRecData)) {
-                    if (sameCount < 10) {
-                        sameCount++;
+                if (readNum != null && readNum.length == 14) {
+                    String curRecData = readNum[5];
+                    if (curRecData.equals(lastRecData)) {
+                        if (sameCount < 10) {
+                            sameCount++;
+                        } else {
+                            isDisConnect = true;
+                        }
                     } else {
-                        isDisConnect = true;
+                        sameCount = 0;
+                        isDisConnect = false;
                     }
-                } else {
-                    sameCount = 0;
-                    isDisConnect = false;
+                    lastRecData = curRecData;
                 }
-                lastRecData = curRecData;
 
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true);
                 if (isDisConnect) {
