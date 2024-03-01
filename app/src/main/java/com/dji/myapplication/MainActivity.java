@@ -417,18 +417,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         /*System.out.println(readText);*/
                                         readNum = readText.split("/");
 
-                                        // 断联逻辑
-                                        if (readNum[0].equals(lastRecData)) {
-                                            sameCount++;
-                                            if (sameCount == 20) {
-                                                isDisConnect = true;
-                                            }
-                                        } else {
-                                            sameCount = 0;
-                                            isDisConnect = false;
-                                        }
-                                        lastRecData = readNum[0];
-
                                         mRoll = Float.parseFloat(readNum[0]);
                                         mYaw = Float.parseFloat(readNum[1]);
                                         mPitch = Float.parseFloat(readNum[2]);
@@ -1321,6 +1309,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void run() {
             if(trackOn) {
+                // 断联逻辑
+                String curRecData = readNum[5];
+                if (curRecData.equals(lastRecData)) {
+                    if (sameCount < 10) {
+                        sameCount++;
+                    } else {
+                        isDisConnect = true;
+                    }
+                } else {
+                    sameCount = 0;
+                    isDisConnect = false;
+                }
+                lastRecData = curRecData;
+
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true);
                 if (isDisConnect) {
                     VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(0.0), new Double(0.0), new Double(0.0), new Double(0.0), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
