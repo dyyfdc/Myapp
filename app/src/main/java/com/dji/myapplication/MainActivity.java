@@ -1328,6 +1328,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true);
                 if (isDisConnect) {
                     VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(0.0), new Double(0.0), new Double(0.0), new Double(0.0), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
+
+                    VirtualStickManager.getInstance().disableVirtualStick(new CommonCallbacks.CompletionCallback() {
+                        @Override
+                        public void onSuccess() {
+                            showToast("Disable Virtual Stick Success");
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull IDJIError error) {
+                            showToast("Disable Virtual Stick Fail");
+                        }
+                    });
+
+                    virtualFlag = false;
+
                 } else {
                     VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(mRoll), new Double(mPitch), new Double(mYaw), new Double(mThrottle), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
                 }
