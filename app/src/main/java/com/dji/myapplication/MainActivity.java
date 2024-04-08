@@ -1329,19 +1329,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (isDisConnect) {
                     VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(0.0), new Double(0.0), new Double(0.0), new Double(0.0), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
 
-                    VirtualStickManager.getInstance().disableVirtualStick(new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onSuccess() {
-                            showToast("Disable Virtual Stick Success");
-                        }
+                    if (virtualFlag) {
+                        VirtualStickManager.getInstance().disableVirtualStick(new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                virtualFlag = false;
+                                showToast("Disable Virtual Stick Success");
+                            }
 
-                        @Override
-                        public void onFailure(@NonNull IDJIError error) {
-                            showToast("Disable Virtual Stick Fail");
-                        }
-                    });
-
-                    virtualFlag = false;
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+                                showToast("Disable Virtual Stick Fail");
+                            }
+                        });
+                    }
 
                 } else {
                     VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(new VirtualStickFlightControlParam(new Double(mRoll), new Double(mPitch), new Double(mYaw), new Double(mThrottle), VerticalControlMode.VELOCITY, RollPitchControlMode.VELOCITY, YawControlMode.ANGULAR_VELOCITY, FlightCoordinateSystem.BODY));
