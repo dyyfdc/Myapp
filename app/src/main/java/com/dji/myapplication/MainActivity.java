@@ -449,6 +449,110 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         }
 
                                         if (adjustFlag == 1) {
+
+                                            //ISO参数调节
+                                            KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.MANUAL, new CommonCallbacks.CompletionCallback() {
+                                                @Override
+                                                public void onSuccess() {
+                                                    System.out.println("-----------ISO:CameraExposureMode.MANUAL设置成功-----------");
+                                                    KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyISO, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraISO.ISO_200, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            System.out.println("-----------ISO:CameraISO.ISO_100设置成功-----------");
+                                                        }
+
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+                                                            System.out.println("-----------ISO:CameraISO.ISO_100设置失败-----------");
+                                                        }
+                                                    });
+                                                }
+
+                                                @Override
+                                                public void onFailure(@NonNull IDJIError error) {
+                                                    System.out.println("-----------ISO:CameraExposureMode.MANUAL设置失败-----------");
+                                                }
+                                            });
+
+                                            //快门
+                                            KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyShutterSpeed, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraShutterSpeed.SHUTTER_SPEED1_1000, new CommonCallbacks.CompletionCallback() {
+                                                @Override
+                                                public void onSuccess() {
+                                                    System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_500设置成功-----------");
+                                                }
+
+                                                @Override
+                                                public void onFailure(@NonNull IDJIError error) {
+                                                    System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_500设置失败-----------");
+                                                }
+                                            });
+
+                                            KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMinValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
+                                                @Override
+                                                public void onSuccess(Integer integer) {
+                                                    System.out.println("--------------KeyCameraFocusRingMinValue: " + integer.intValue());
+                                                }
+
+                                                @Override
+                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                }
+                                            });
+                                            KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMaxValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
+                                                @Override
+                                                public void onSuccess(Integer integer) {
+                                                    focusValue = integer.intValue();
+                                                    System.out.println("--------------KeyCameraFocusRingMaxValue: " + focusValue);
+                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
+                                                                @Override
+                                                                public void onSuccess() {
+                                                                    KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.MANUAL, new CommonCallbacks.CompletionCallback() {
+                                                                        @Override
+                                                                        public void onSuccess() {
+                                                                            KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingValue), focusValue, new CommonCallbacks.CompletionCallback() {
+                                                                                @Override
+                                                                                public void onSuccess() {
+                                                                                    showToast("Set focusValue Success");
+                                                                                }
+
+                                                                                @Override
+                                                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                                                }
+                                                                            });
+                                                                        }
+
+                                                                        @Override
+                                                                        public void onFailure(@NonNull IDJIError error) {
+
+                                                                        }
+                                                                    });
+                                                                }
+
+                                                                @Override
+                                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                                }
+                                                            });
+
+                                                        }
+
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+
+                                                        }
+                                                    });
+                                                }
+
+                                                @Override
+                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                }
+                                            });
+
                                             // 设置云台角度Pitch和Yaw
                                             GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
                                             gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
@@ -469,6 +573,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         }
 
                                         if (adjustFlagFinished == 1) {
+
+                                            //ISO参数调节 自动曝光
+                                            KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.PROGRAM, new CommonCallbacks.CompletionCallback() {
+                                                @Override
+                                                public void onSuccess() {
+                                                    System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置成功-----------");
+
+                                                }
+
+                                                @Override
+                                                public void onFailure(@NonNull IDJIError error) {
+                                                    System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置失败-----------");
+                                                }
+                                            });
+
+                                            //对焦模式 AFC
+                                            KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
+                                                @Override
+                                                public void onSuccess() {
+                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AFC, new CommonCallbacks.CompletionCallback() {
+                                                                @Override
+                                                                public void onSuccess() {
+
+                                                                }
+
+                                                                @Override
+                                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                                }
+                                                            });
+                                                        }
+
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+
+                                                        }
+                                                    });
+
+                                                }
+
+                                                @Override
+                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                }
+                                            });
+
                                             // 设置云台角度Pitch和Yaw
                                             GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
                                             gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
@@ -792,7 +945,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     payloadOn = false;
                 }
 
-                //ISO参数调节
+/*                //ISO参数调节
                 KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.MANUAL, new CommonCallbacks.CompletionCallback() {
                     @Override
                     public void onSuccess() {
@@ -887,6 +1040,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                             }
                         });
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull IDJIError error) {
+
+                    }
+                });*/
+
+                //ISO参数调节 自动曝光
+                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.PROGRAM, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置成功-----------");
+
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull IDJIError error) {
+                        System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置失败-----------");
+                    }
+                });
+
+                //对焦模式 AFC
+                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AFC, new CommonCallbacks.CompletionCallback() {
+                                    @Override
+                                    public void onSuccess() {
+
+                                    }
+
+                                    @Override
+                                    public void onFailure(@NonNull IDJIError error) {
+
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+
+                            }
+                        });
+
                     }
 
                     @Override
