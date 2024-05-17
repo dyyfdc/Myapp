@@ -1514,7 +1514,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (readNum != null && readNum.length == 14) {
                     String curRecData = readNum[5];
                     if (curRecData.equals(lastRecData)) {
-                        if (sameCount < 10) {
+                        if (sameCount < 100) {
                             sameCount++;
                         } else {
                             isDisConnect = true;
