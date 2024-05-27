@@ -190,7 +190,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int focusValue = 0;
     private int adjustFlag = 0;
     private int gimbalAdjustFlagFinished = 0;
-    private int adjustFlagFinished = 0;
+    private double adjustFlagFinished_pre = 10.0;
+    private double adjustFlagFinished = 0.0;
     private int landFlag = 0;
     private boolean landProcess = true;
     private int transferFlag = 0;
@@ -452,8 +453,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             // 设置云台角度Pitch和Yaw
                                             GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
                                             gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
-                                            gimbalAngleRotation.setPitch(-90.0);
-                                            gimbalAngleRotation.setYaw(0.0);
+//                                            gimbalAngleRotation.setPitch(-90.0);
+//                                            gimbalAngleRotation.setYaw(0.0);
 
                                             KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
                                                 @Override
@@ -468,11 +469,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             });
                                         }
 
-                                        if (adjustFlagFinished == 1) {
+                                        if (adjustFlagFinished != adjustFlagFinished_pre) {
                                             // 设置云台角度Pitch和Yaw
                                             GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
                                             gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
-                                            gimbalAngleRotation.setPitch(0.0);
+                                            gimbalAngleRotation.setPitch(adjustFlagFinished);
                                             gimbalAngleRotation.setYaw(0.0);
 
                                             KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
@@ -487,6 +488,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                 }
                                             });
                                         }
+                                        adjustFlagFinished_pre = adjustFlagFinished;
 
                                         //下降指令
                                         if (landFlag == 1 && landProcess) {
@@ -1313,7 +1315,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (readNum != null && readNum.length == 14) {
                     String curRecData = readNum[5];
                     if (curRecData.equals(lastRecData)) {
-                        if (sameCount < 10) {
+                        if (sameCount < 100) {
                             sameCount++;
                         } else {
                             isDisConnect = true;
