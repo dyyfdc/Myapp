@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import dji.sdk.keyvalue.key.BatteryKey;
 import dji.sdk.keyvalue.key.CameraKey;
 import dji.sdk.keyvalue.key.FlightControllerKey;
 import dji.sdk.keyvalue.key.GimbalKey;
@@ -203,6 +204,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private List<String> missingPermission = new ArrayList<>();
     private static final int REQUEST_PERMISSION_CODE = 12345;
+
+    private String batteryPercentageStr = "100";
 
 
     @Override
@@ -404,6 +407,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         xVelocityStr = String.valueOf(xVelocity);
                                         yVelocity = mVelocity.getY();
                                         yVelocityStr = String.valueOf(yVelocity);
+
+                                        Integer batteryPercentage = KeyManager.getInstance().getValue(KeyTools.createKey(BatteryKey.KeyChargeRemainingInPercent));
+                                        if (batteryPercentage != null) {
+                                            System.out.println("Battery percentage: " + batteryPercentage + "%");
+                                        } else {
+                                            System.out.println("Battery percentage is not available.");
+                                        }
+                                        batteryPercentageStr = String.valueOf(batteryPercentage);
 
                                         // 发送无人机的偏航信息给无人车
                                         bw.write(realYawStr + "/" + gimbalAdjustFlagFinished + '\n');
@@ -1224,7 +1235,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                         e.printStackTrace();
                                                     }
 
-                                                    Socket client = new Socket("192.168.3.202", 8888);
+                                                    Socket client = new Socket("192.168.3.217", 8888);
                                                     showToast("Connect success!");
 
                                                     OutputStream os = client.getOutputStream();
