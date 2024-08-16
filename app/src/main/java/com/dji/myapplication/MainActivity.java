@@ -1224,7 +1224,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                         e.printStackTrace();
                                                     }
 
-                                                    Socket client = new Socket("192.168.3.202", 8888);
+                                                    Socket client = new Socket("192.168.3.217", 8888);
                                                     showToast("Connect success!");
 
                                                     OutputStream os = client.getOutputStream();
