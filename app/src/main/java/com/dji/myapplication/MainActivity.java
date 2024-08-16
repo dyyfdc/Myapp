@@ -193,6 +193,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private double adjustFlagFinished_pre = 10.0;
     private double adjustFlagFinished = 0.0;
     private int landFlag = 0;
+//    private int takeoff = 0;
     private boolean landProcess = true;
     private int transferFlag = 0;
     private boolean transferUpFlag = false;
@@ -432,6 +433,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         adjustFlagFinished = Integer.parseInt(readNum[11]);
                                         landFlag = Integer.parseInt(readNum[12]);
                                         transferFlag = Integer.parseInt(readNum[13]);
+//                                        takeoff = Integer.parseInt(readNum[14]);
 
 
                                         // 记录无人机的状态信息
@@ -490,6 +492,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         }
                                         adjustFlagFinished_pre = adjustFlagFinished;
 
+//                                        if(takeoff == 1) {
+//                                            KeyManager.getInstance().performAction(KeyTools.createKey(FlightControllerKey.KeyStartTakeoff), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+//                                                @Override
+//                                                public void onSuccess(EmptyMsg emptyMsg) {
+//                                                    showToast("take off success");
+//                                                }
+//
+//                                                @Override
+//                                                public void onFailure(@NonNull IDJIError error) {
+//                                                    showToast(("take off Fail"));
+//                                                }
+//                                            });
+//                                        }
+
                                         //下降指令
                                         if (landFlag == 1 && landProcess) {
                                             landProcess = false;
@@ -516,6 +532,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                 }
                                             });
                                         }
+
+
 
                                         // 拍照标志位
                                         if(photoFlag == 1) {
@@ -1025,7 +1043,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                         e.printStackTrace();
                                                     }
 
-                                                    Socket client = new Socket("192.168.3.202", 8888);
+                                                    Socket client = new Socket("192.168.3.217", 8888);
                                                     showToast("Connect success!");
 
                                                     OutputStream os = client.getOutputStream();
