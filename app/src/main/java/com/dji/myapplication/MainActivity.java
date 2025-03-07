@@ -87,6 +87,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -114,6 +116,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+
+
 
 /**
  * author:chenjunzhu
@@ -156,6 +161,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean virtualFlag = false;
     // 跟随开启标志位
     private boolean trackOn = false;
+    private boolean trackTaskOver = false;
     // 第一次开启跟随模式标志位
     private boolean firstTrack = true;
 
@@ -194,6 +200,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean liveOn = false;
     private boolean firstLive = true;
 
+    private boolean firstDeletePhoto = true;
+
     private boolean payloadOn = false;
 
     private int SDCapacity = 0;
@@ -208,13 +216,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private double adjustFlagFinished = 0.0;
     private int landFlag = 0;
     private int errLandFlag = 0;
-//    private int takeoff = 0;
+    //    private int takeoff = 0;
     private boolean landProcess = true;
     private int transferFlag = 0;
     private boolean transferUpFlag = false;
 
     private long stime = 0;
     private long etime = 0;
+
+    private long deletephotoTime = 0;
 
     private boolean sendPicFin = false;
 
@@ -227,6 +237,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private boolean toastShown = false;
 
+    private Timer mLiveEnableTimer;
+
+    private boolean isFirstDisableClick = true;
+
+
+
+
 
 
 
@@ -238,6 +255,120 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         registerApp();
         initUI();
     }
+
+
+
+
+    private void setCameraParameters() {
+        //ISO参数调节
+        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.MANUAL, new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                System.out.println("-----------ISO:CameraExposureMode.MANUAL设置成功-----------");
+                KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyISO, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraISO.ISO_200, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        System.out.println("-----------ISO:CameraISO.ISO_200设置成功-----------");
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull IDJIError error) {
+                        System.out.println("-----------ISO:CameraISO.ISO_200设置失败-----------");
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError error) {
+                System.out.println("-----------ISO:CameraExposureMode.MANUAL设置失败-----------");
+            }
+        });
+
+        //快门
+        KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyShutterSpeed, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraShutterSpeed.SHUTTER_SPEED1_1000, new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_1000设置成功-----------");
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError error) {
+                System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_1000设置失败-----------");
+            }
+        });
+
+        //设置手动对焦
+        KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMinValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
+            @Override
+            public void onSuccess(Integer integer) {
+                System.out.println("--------------KeyCameraFocusRingMinValue: " + integer.intValue());
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError error) {
+
+            }
+        });
+
+        //焦距
+        KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMaxValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
+            @Override
+            public void onSuccess(Integer integer) {
+                focusValue = integer.intValue();
+                System.out.println("--------------KeyCameraFocusRingMaxValue: " + focusValue);
+                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.MANUAL, new CommonCallbacks.CompletionCallback() {
+                                    @Override
+                                    public void onSuccess() {
+                                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingValue), focusValue, new CommonCallbacks.CompletionCallback() {
+                                            @Override
+                                            public void onSuccess() {
+                                                showToast("Set focusValue Success");
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull IDJIError error) {
+
+                                            }
+
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onFailure(@NonNull IDJIError error) {
+
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull IDJIError error) {
+
+                    }
+                });
+
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError error) {
+
+            }
+        });
+    }
+
 
 
     /**
@@ -281,6 +412,111 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             // 关闭虚拟摇杆控制模式
             case R.id.btn_disable_virtual_stick:
+                long endtime = System.currentTimeMillis();
+
+
+                if (firstDeletePhoto) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            // 第一次开启视频流时即删除相机与遥控器的图片
+                            // 添加媒体文件列表监听
+                            showToast("Transfer Start!");
+                            realMediaFileListState = MediaManager.getInstance().getMediaFileListState();
+                            // 添加媒体文件列表监听
+                            MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
+                                @Override
+                                public void onUpdate(MediaFileListState mediaFileListState) {
+                                    realMediaFileListState = mediaFileListState;
+                                }
+                            });
+
+                            MediaManager.getInstance().enable(new CommonCallbacks.CompletionCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    MediaManager.getInstance().pullMediaFileListFromCamera(new PullMediaFileListParam.Builder().filter(MediaFileFilter.PHOTO).build(), new CommonCallbacks.CompletionCallback() {
+                                        @Override
+                                        public void onSuccess() {
+                                            showToast("Pull Success");
+                                            pullSuccess = true;
+                                        }
+
+                                        @Override
+                                        public void onFailure(@NonNull IDJIError error) {
+                                            showToast("Pull Fail");
+                                        }
+                                    });
+                                }
+
+                                @Override
+                                public void onFailure(@NonNull IDJIError error) {
+                                    System.out.println("Enable Fail");
+                                }
+                            });
+                            // 设置文件保存路径
+                            File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                            //此电脑\DJI RC Pro Enterprise\内部共享存储空间\Android\data\com.dji.myapplication\files\DJI\mediafile
+                            if(!fileDir.exists()) {
+                                fileDir.mkdirs();
+                            }
+                            //等待拉取多媒体文件
+                            while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
+
+                            }
+
+                            if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
+                                MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
+                                List<MediaFile> photoData = mediaFileListData.getData();
+                                if (photoData.size() > 0) {
+                                    try {
+                                        Thread.sleep(500);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+
+
+                                    MediaManager.getInstance().deleteMediaFiles(photoData, new CommonCallbacks.CompletionCallback() {
+                                        @Override
+                                        public void onSuccess() {
+                                            showToast("Delete success");
+                                            System.out.println("清空数据成功！");
+                                        }
+
+                                        @Override
+                                        public void onFailure(@NonNull IDJIError error) {
+                                            showToast("Delete fail");
+                                            System.out.println("清空数据失败！");
+                                        }
+                                    });
+                                }
+                            }
+                            MediaManager.getInstance().removeAllMediaFileListStateListener();
+
+                            List<File> imageFiles = getImageFiles(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                            for(File imageFile : imageFiles) {
+                                if (imageFile.isFile()) {
+                                    imageFile.delete();
+                                }
+                            }
+                            showToast("Delete mediafile success");
+//                            deletephotoTime = System.currentTimeMillis();
+                            pullSuccess = false;
+
+                            MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    System.out.println("Disable Success");
+                                }
+
+                                @Override
+                                public void onFailure(@NonNull IDJIError error) {
+                                    System.out.println("Disable Fail");
+                                }
+                            });
+                        }
+                    }).start();
+                    firstDeletePhoto = false;
+                }
 
                 VirtualStickManager.getInstance().setVirtualStickStateListener(new VirtualStickStateListener() {
                     @Override
@@ -294,6 +530,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 });
 
+                if (isFirstDisableClick) {
+                    // 首次点击时执行
+                    isFirstDisableClick = false;
+
+                    runOnUiThread(() -> {
+                        mBtnLive.setEnabled(false);
+                        mBtnLive.setAlpha(0.5f);
+                    });
+
+                    // 设置15秒计时器
+                    if (mLiveEnableTimer != null) {
+                        mLiveEnableTimer.cancel();
+                    }
+                    mLiveEnableTimer = new Timer();
+                    mLiveEnableTimer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            runOnUiThread(() -> {
+                                mBtnLive.setEnabled(true);
+                                mBtnLive.setAlpha(1.0f);
+                            });
+                        }
+                    }, 15000); // 15秒延迟
+                }
+
                 VirtualStickManager.getInstance().disableVirtualStick(new CommonCallbacks.CompletionCallback() {
                     @Override
                     public void onSuccess() {
@@ -305,8 +566,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         showToast("Disable Virtual Stick Fail");
                     }
                 });
-
-                virtualFlag = false;
 
                 break;
 
@@ -391,173 +650,172 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             @Override
                             public void run() {
 
-                                while (true) {
+                                while (!trackTaskOver) {
                                     // 接收无人车的控制命令
-                                Socket socket = null;
-
-                                try {
-                                    // 开启TCP客户端程序，接收无人车的命令
-                                    socket = new Socket("192.168.3.217", 12345);
-                                    showToast("Connect Success");
-                                    isDisConnect = false;
-                                    InputStream is = socket.getInputStream();
-                                    OutputStream os = socket.getOutputStream();
-
-                                    InputStreamReader isr = new InputStreamReader(is, "UTF-8");
-                                    OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
-
-                                    BufferedReader br = new BufferedReader(isr);
-                                    BufferedWriter bw = new BufferedWriter(osw);
+                                    Socket socket = null;
 
                                     try {
-                                        Thread.currentThread().sleep(500);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
+                                        // 开启TCP客户端程序，接收无人车的命令
+                                        socket = new Socket("192.168.3.217", 12345);
+//                                        socket = new Socket("192.168.192.201", 12345);
+                                        showToast("Connect Success");
+                                        isDisConnect = false;
 
-                                    // 设置文件保存路径
-                                    File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/FlightLog"));
-                                    if(!fileDir.exists()) {
-                                        fileDir.mkdirs();
-                                    }
+                                        InputStream is = socket.getInputStream();
+                                        OutputStream os = socket.getOutputStream();
 
-                                    while(true) {
+                                        InputStreamReader isr = new InputStreamReader(is, "UTF-8");
+                                        OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
 
-                                        // 获取无人机的偏航信息，偏航需要与无人车的偏航对齐
-                                        mAttitude = KeyManager.getInstance().getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftAttitude));
-                                        realYaw = mAttitude.getYaw();
-                                        realYawStr = String.valueOf(realYaw);
+                                        BufferedReader br = new BufferedReader(isr);
+                                        BufferedWriter bw = new BufferedWriter(osw);
 
-                                        //获取无人机电量信息
-                                        Integer batteryPercentage = KeyManager.getInstance().getValue(KeyTools.createKey(BatteryKey.KeyChargeRemainingInPercent));
-                                        if (batteryPercentage != null) {
-                                            System.out.println("Battery percentage: " + batteryPercentage + "%");
-                                        } else {
-                                            System.out.println("Battery percentage is not available.");
+                                        try {
+                                            Thread.currentThread().sleep(500);
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
                                         }
-                                        batteryPercentageStr = String.valueOf(batteryPercentage);
 
-
-                                        // 获取无人机的速度估计信息
-                                        Velocity3D mVelocity = KeyManager.getInstance().getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity));
-                                        zVelocity = mVelocity.getZ();
-                                        zVelocityStr = String.valueOf(zVelocity);
-                                        xVelocity = mVelocity.getX();
-                                        xVelocityStr = String.valueOf(xVelocity);
-                                        yVelocity = mVelocity.getY();
-                                        yVelocityStr = String.valueOf(yVelocity);
-
-                                        // 发送无人机的偏航信息给无人车
-                                        bw.write(realYawStr + "/" + gimbalAdjustFlagFinished + "/" + batteryPercentageStr + '\n');
-                                        if (gimbalAdjustFlagFinished == 1) {
-                                            gimbalAdjustFlagFinished = 0;
+                                        // 设置文件保存路径
+                                        File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/FlightLog"));
+                                        if(!fileDir.exists()) {
+                                            fileDir.mkdirs();
                                         }
-                                        bw.flush();
 
-                                        // 读取无人车的控制信息
+                                        while(!trackTaskOver) {
 
-                                        readText = br.readLine();
-                                        if(readText == null){
-                                            showToast("Connect Fail-1");
-                                            isDisConnect = true;
-                                            try {
-                                                socket.close();
-                                                socket = null;
-                                                Thread.currentThread().sleep(1000);
-                                            } catch (IOException ex) {
-                                                ex.printStackTrace();
-                                            } catch (InterruptedException es) {
-                                                es.printStackTrace();
+                                            // 获取无人机的偏航信息，偏航需要与无人车的偏航对齐
+                                            mAttitude = KeyManager.getInstance().getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftAttitude));
+                                            realYaw = mAttitude.getYaw();
+                                            realYawStr = String.valueOf(realYaw);
+
+                                            //获取无人机电量信息
+                                            Integer batteryPercentage = KeyManager.getInstance().getValue(KeyTools.createKey(BatteryKey.KeyChargeRemainingInPercent));
+                                            if (batteryPercentage != null) {
+                                                System.out.println("Battery percentage: " + batteryPercentage + "%");
+                                            } else {
+                                                System.out.println("Battery percentage is not available.");
                                             }
-                                            break;
-
-                                        }
-                                        /*System.out.println(readText);*/
-                                        System.out.println(readText);
-                                        readNum = readText.split("/");
+                                            batteryPercentageStr = String.valueOf(batteryPercentage);
 
 
-                                        mRoll = Float.parseFloat(readNum[0]);
-                                        mYaw = Float.parseFloat(readNum[1]);
-                                        mPitch = Float.parseFloat(readNum[2]);
-                                        mThrottle = Float.parseFloat(readNum[3]);
-                                        photoFlag = Integer.parseInt(readNum[4]);
-                                        lidarX = Float.parseFloat(readNum[5]);
-                                        lidarY = Float.parseFloat(readNum[6]);
-                                        lidarZ = Float.parseFloat(readNum[7]);
-                                        focusTargetX = Double.parseDouble(readNum[8]);
-                                        focusTargetY = Double.parseDouble(readNum[9]);
-                                        adjustFlag = Integer.parseInt(readNum[10]);
-                                        adjustFlagFinished = Integer.parseInt(readNum[11]);
-                                        landFlag = Integer.parseInt(readNum[12]);
-                                        transferFlag = Integer.parseInt(readNum[13]);
+                                            // 获取无人机的速度估计信息
+                                            Velocity3D mVelocity = KeyManager.getInstance().getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity));
+                                            zVelocity = mVelocity.getZ();
+                                            zVelocityStr = String.valueOf(zVelocity);
+                                            xVelocity = mVelocity.getX();
+                                            xVelocityStr = String.valueOf(xVelocity);
+                                            yVelocity = mVelocity.getY();
+                                            yVelocityStr = String.valueOf(yVelocity);
+
+                                            // 发送无人机的偏航信息给无人车
+                                            bw.write(realYawStr + "/" + gimbalAdjustFlagFinished + "/" + batteryPercentageStr + '\n');
+                                            if (gimbalAdjustFlagFinished == 1) {
+                                                gimbalAdjustFlagFinished = 0;
+                                            }
+                                            bw.flush();
+
+                                            // 读取无人车的控制信息
+
+                                            readText = br.readLine();
+                                            if(readText == null){
+                                                showToast("Connect Fail-1");
+                                                isDisConnect = true;
+                                                try {
+                                                    socket.close();
+                                                    socket = null;
+                                                    Thread.currentThread().sleep(1000);
+                                                } catch (IOException ex) {
+                                                    ex.printStackTrace();
+                                                } catch (InterruptedException es) {
+                                                    es.printStackTrace();
+                                                }
+                                                break;
+
+                                            }
+                                            /*System.out.println(readText);*/
+                                            System.out.println(readText);
+                                            readNum = readText.split("/");
+
+
+                                            mRoll = Float.parseFloat(readNum[0]);
+                                            mYaw = Float.parseFloat(readNum[1]);
+                                            mPitch = Float.parseFloat(readNum[2]);
+                                            mThrottle = Float.parseFloat(readNum[3]);
+                                            photoFlag = Integer.parseInt(readNum[4]);
+                                            lidarX = Float.parseFloat(readNum[5]);
+                                            lidarY = Float.parseFloat(readNum[6]);
+                                            lidarZ = Float.parseFloat(readNum[7]);
+                                            focusTargetX = Double.parseDouble(readNum[8]);
+                                            focusTargetY = Double.parseDouble(readNum[9]);
+                                            adjustFlag = Integer.parseInt(readNum[10]);
+                                            adjustFlagFinished = Integer.parseInt(readNum[11]);
+                                            landFlag = Integer.parseInt(readNum[12]);
+                                            transferFlag = Integer.parseInt(readNum[13]);
 
 
 //                                        takeoff = Integer.parseInt(readNum[14]);
 
 
-                                        // 记录无人机的状态信息
-                                        try {
-                                            File logFile = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/FlightLog/flightlog.txt"));
-                                            FileWriter fileWriter = new FileWriter(logFile, true);
-                                            PrintWriter printWriter = new PrintWriter(fileWriter);
-                                            timestamp = System.currentTimeMillis();
-                                            Date logTime = new Date();
-                                            SimpleDateFormat sdfTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                                            String strTime = sdfTime.format(logTime);
-                                            printWriter.println("Time " + strTime + " " + "photoFlag " + photoFlag + " " + "xVelocityStr " + xVelocityStr + " " + "yVelocityStr " + yVelocityStr + " " + "zVelocityStr " + zVelocityStr + " " + "lidarX " + lidarX + " " + "lidarY " + lidarY + " " + "lidarZ " + lidarZ+ " " + "Yaw " + realYawStr);
-                                            printWriter.flush();
-                                            fileWriter.flush();
-                                        } catch (IOException ioException) {
-                                            ioException.printStackTrace();
-                                        }
+                                            // 记录无人机的状态信息
+                                            try {
+                                                File logFile = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/FlightLog/flightlog.txt"));
+                                                FileWriter fileWriter = new FileWriter(logFile, true);
+                                                PrintWriter printWriter = new PrintWriter(fileWriter);
+                                                timestamp = System.currentTimeMillis();
+                                                Date logTime = new Date();
+                                                SimpleDateFormat sdfTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                                String strTime = sdfTime.format(logTime);
+                                                printWriter.println("Time " + strTime + " " + "photoFlag " + photoFlag + " " + "xVelocityStr " + xVelocityStr + " " + "yVelocityStr " + yVelocityStr + " " + "zVelocityStr " + zVelocityStr + " " + "lidarX " + lidarX + " " + "lidarY " + lidarY + " " + "lidarZ " + lidarZ+ " " + "Yaw " + realYawStr);
+                                                printWriter.flush();
+                                                fileWriter.flush();
+                                            } catch (IOException ioException) {
+                                                ioException.printStackTrace();
+                                            }
 
-//2024.11.27注释⬇
 
-//2024.11.27注释⬆
-
-                                        if (adjustFlag == 1) {
-                                            // 设置云台角度Pitch和Yaw
-                                            GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
-                                            gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
+                                            if (adjustFlag == 1) {
+                                                // 设置云台角度Pitch和Yaw
+                                                GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
+                                                gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
 //                                            gimbalAngleRotation.setPitch(-90.0);
 //                                            gimbalAngleRotation.setYaw(0.0);
 
-                                            KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                @Override
-                                                public void onSuccess(EmptyMsg emptyMsg) {
-                                                    gimbalAdjustFlagFinished = 1;
-                                                }
+                                                KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+                                                    @Override
+                                                    public void onSuccess(EmptyMsg emptyMsg) {
+                                                        gimbalAdjustFlagFinished = 1;
+                                                    }
 
-                                                @Override
-                                                public void onFailure(@NonNull IDJIError error) {
+                                                    @Override
+                                                    public void onFailure(@NonNull IDJIError error) {
 
-                                                }
-                                            });
-                                        }
+                                                    }
+                                                });
+                                            }
 
-                                        if (adjustFlagFinished != adjustFlagFinished_pre) {
-                                            // 设置云台角度Pitch和Yaw
-                                            GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
-                                            gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
-                                            gimbalAngleRotation.setPitch(adjustFlagFinished);
-                                            gimbalAngleRotation.setYaw(0.0);
+                                            if (adjustFlagFinished != adjustFlagFinished_pre) {
+                                                // 设置云台角度Pitch和Yaw
+                                                GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
+                                                gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
+                                                gimbalAngleRotation.setPitch(adjustFlagFinished);
+                                                gimbalAngleRotation.setYaw(0.0);
 
-                                            KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                @Override
-                                                public void onSuccess(EmptyMsg emptyMsg) {
+                                                KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+                                                    @Override
+                                                    public void onSuccess(EmptyMsg emptyMsg) {
 
-                                                }
+                                                    }
 
-                                                @Override
-                                                public void onFailure(@NonNull IDJIError error) {
+                                                    @Override
+                                                    public void onFailure(@NonNull IDJIError error) {
 
-                                                }
-                                            });
-                                        }
-                                        adjustFlagFinished_pre = adjustFlagFinished;
+                                                    }
+                                                });
+                                            }
+                                            adjustFlagFinished_pre = adjustFlagFinished;
 
-                                        //一键起飞
+                                            //一键起飞
 //                                        if(takeoff == 1) {
 //                                            KeyManager.getInstance().performAction(KeyTools.createKey(FlightControllerKey.KeyStartTakeoff), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
 //                                                @Override
@@ -573,119 +831,119 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                                        }
 
 
-                                        // 添加一个状态变量来跟踪Toast是否已显示
-                                        if (landFlag == 1 && landProcess) {
-                                            landProcess = false; // 禁用后立即将其设置为 false
-                                            VirtualStickManager.getInstance().disableVirtualStick(new CommonCallbacks.CompletionCallback() {
-                                                @Override
-                                                public void onSuccess() {
-                                                    showToast("Disable Virtual Stick Success");
-                                                    virtualFlag = false; // 禁用后立即将其设置为 false
-                                                    KeyManager.getInstance().performAction(KeyTools.createKey(FlightControllerKey.KeyStartAutoLanding), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                        @Override
-                                                        public void onSuccess(EmptyMsg emptyMsg) {
-                                                            showToast("Auto Land Success");
-                                                        }
-
-                                                        @Override
-                                                        public void onFailure(@NonNull IDJIError error) {
-                                                            showToast("Auto Land Fail");
-                                                        }
-                                                    });
-
-                                                    // 重置Toast状态
-                                                    isToastShown = false; // 成功后重置
-                                                    landFlag = 0; // 设置为其他值，防止重复触发
-                                                }
-
-                                                @Override
-                                                public void onFailure(@NonNull IDJIError error) {
-                                                    if (!isToastShown) { // 只有在Toast未显示的情况下才能显示
-                                                        showToast("Disable Virtual Stick Fail");
-                                                        isToastShown = true; // 设置为true，表示Toast已经显示过
-                                                    }
-                                                    // 可以考虑设置 `landFlag` 为其他值, 或者采取其他措施以防止重复触发
-                                                }
-                                            });
-                                        }
-
-
-                                        // 拍照标志位
-                                        if(photoFlag == 1) {
-                                            // 只有在上升沿时刻才会进行拍照
-                                            if (!photoUpFlag) {
-                                                try {
-                                                    Thread.sleep(100);
-                                                } catch (InterruptedException e) {
-                                                    e.printStackTrace();
-                                                }
-
-
-                                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
+                                            // 添加一个状态变量来跟踪Toast是否已显示
+                                            if (landFlag == 1 && landProcess) {
+                                                landProcess = false; // 禁用后立即将其设置为 false
+                                                VirtualStickManager.getInstance().disableVirtualStick(new CommonCallbacks.CompletionCallback() {
                                                     @Override
                                                     public void onSuccess() {
-                                                        // 获取当前内存信息
-                                                        KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
+                                                        showToast("Disable Virtual Stick Success");
+                                                        virtualFlag = false; // 禁用后立即将其设置为 false
+                                                        KeyManager.getInstance().performAction(KeyTools.createKey(FlightControllerKey.KeyStartAutoLanding), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
                                                             @Override
-                                                            public void onSuccess(CameraStorageInfos cameraStorageInfos) {
-                                                                SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
-                                                                // 内存大于100MB时才会进行拍照
-                                                                if (SDCapacity > 100) {
-                                                                    KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                                        @Override
-                                                                        public void onSuccess(EmptyMsg emptyMsg) {
-                                                                            showToast("Photo Success");
-                                                                        }
-
-                                                                        @Override
-                                                                        public void onFailure(@NonNull IDJIError error) {
-                                                                            showToast("Photo Fail");
-                                                                        }
-                                                                    });
-                                                                }
+                                                            public void onSuccess(EmptyMsg emptyMsg) {
+                                                                showToast("Auto Land Success");
                                                             }
 
                                                             @Override
                                                             public void onFailure(@NonNull IDJIError error) {
-
+                                                                showToast("Auto Land Fail");
                                                             }
                                                         });
 
+                                                        // 重置Toast状态
+                                                        isToastShown = false; // 成功后重置
+                                                        landFlag = 0; // 设置为其他值，防止重复触发
                                                     }
 
                                                     @Override
                                                     public void onFailure(@NonNull IDJIError error) {
-                                                        showToast("set fail!!!");
+                                                        if (!isToastShown) { // 只有在Toast未显示的情况下才能显示
+                                                            showToast("Disable Virtual Stick Fail");
+                                                            isToastShown = true; // 设置为true，表示Toast已经显示过
+                                                        }
+                                                        // 可以考虑设置 `landFlag` 为其他值, 或者采取其他措施以防止重复触发
                                                     }
                                                 });
-
-                                                photoUpFlag = true;
                                             }
-                                        } else {
-                                            photoUpFlag = false;
-                                        }
 
+
+                                            // 拍照标志位
+                                            if(photoFlag == 1) {
+                                                // 只有在上升沿时刻才会进行拍照
+                                                if (!photoUpFlag) {
+                                                    try {
+                                                        Thread.sleep(100);
+                                                    } catch (InterruptedException e) {
+                                                        e.printStackTrace();
+                                                    }
+
+
+                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            // 获取当前内存信息
+                                                            KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
+                                                                @Override
+                                                                public void onSuccess(CameraStorageInfos cameraStorageInfos) {
+                                                                    SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
+                                                                    // 内存大于100MB时才会进行拍照
+                                                                    if (SDCapacity > 100) {
+                                                                        KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+                                                                            @Override
+                                                                            public void onSuccess(EmptyMsg emptyMsg) {
+                                                                                showToast("Photo Success");
+                                                                            }
+
+                                                                            @Override
+                                                                            public void onFailure(@NonNull IDJIError error) {
+                                                                                showToast("Photo Fail");
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                @Override
+                                                                public void onFailure(@NonNull IDJIError error) {
+
+                                                                }
+                                                            });
+
+                                                        }
+
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+                                                            showToast("set fail!!!");
+                                                        }
+                                                    });
+
+                                                    photoUpFlag = true;
+                                                }
+                                            } else {
+                                                photoUpFlag = false;
+                                            }
+
+                                            try {
+                                                Thread.currentThread().sleep(25);
+                                            } catch (InterruptedException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        showToast("Connect Fail");
+                                        showToast(e.getMessage());
+                                        e.printStackTrace();
+                                        isDisConnect = true;
                                         try {
-                                            Thread.currentThread().sleep(25);
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
+                                            socket.close();
+                                            socket = null;
+                                            Thread.currentThread().sleep(1000);
+                                        } catch (IOException ex) {
+                                            ex.printStackTrace();
+                                        } catch (InterruptedException es) {
+                                            es.printStackTrace();
                                         }
                                     }
-                                } catch (Exception e) {
-                                    showToast("Connect Fail");
-                                    showToast(e.getMessage());
-                                    e.printStackTrace();
-                                    isDisConnect = true;
-                                    try {
-                                        socket.close();
-                                        socket = null;
-                                        Thread.currentThread().sleep(1000);
-                                    } catch (IOException ex) {
-                                        ex.printStackTrace();
-                                    } catch (InterruptedException es) {
-                                        es.printStackTrace();
-                                    }
-                                }
                                 }
                             }
                         }).start();
@@ -695,324 +953,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else {
                     trackOn = false;
                 }
-
-                break;
-
-
-
-            // 云台控制
-            case R.id.btn_gimbal:
-
-                // 设置云台角度Pitch和Yaw
-                GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
-                gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
-                gimbalAngleRotation.setPitch(0.0);
-                gimbalAngleRotation.setYaw(0.0);
-
-                KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                    @Override
-                    public void onSuccess(EmptyMsg emptyMsg) {
-
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-
-                break;
-
-            // RTSP视频流
-            case R.id.btn_start_live:
-
-                // 获取可用的码流源
-                List<StreamSource> frameLive = VideoStreamManager.getInstance().getAvailableStreamSources();
-                // 获取可用的码流通道
-                IVideoChannel availableVideoChannelLive = VideoStreamManager.getInstance().getAvailableVideoChannel(VideoChannelType.PRIMARY_STREAM_CHANNEL);
-
-                ILiveStreamManager iLiveStreamManager = LiveStreamManager.getInstance();
-
-                if (frameLive != null) {
-
-                    if (!liveOn) {
-                        // 绑定视频源并开启码流通道
-                        availableVideoChannelLive.startChannel(frameLive.get(0), new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-
-                            }
-                        });
-
-                        if (firstLive) {
-                            firstLive = false;
-                            // 设置解码方式并将图像渲染到屏幕上
-                            VideoDecoder videoDecoderLive = new VideoDecoder(this.getBaseContext(), availableVideoChannelLive.getVideoChannelType(), DecoderOutputMode.SURFACE_MODE, mSurfaceView, 1080, 720, true);
-                        }
-
-                        // 设置直播状态监听器
-                        iLiveStreamManager.addLiveStreamStatusListener(new LiveStreamStatusListener() {
-                            @Override
-                            public void onLiveStreamStatusUpdate(LiveStreamStatus status) {
-
-                            }
-
-                            @Override
-                            public void onError(IDJIError error) {
-                                showToast("LiveStream Fail");
-                            }
-                        });
-
-                        // RTSP视频流的用户名，密码和端口
-                        RtspSettings.Builder rtspSettingsBuilder = new RtspSettings.Builder();
-                        rtspSettingsBuilder.setUserName("yijia");
-                        rtspSettingsBuilder.setPassWord("123");
-                        rtspSettingsBuilder.setPort(8554);
-                        RtspSettings rtspSettings = rtspSettingsBuilder.build();
-
-                        LiveStreamSettings.Builder liveStreamSettingsBuilder = new LiveStreamSettings.Builder();
-                        liveStreamSettingsBuilder.setLiveStreamType(LiveStreamType.RTSP);
-                        liveStreamSettingsBuilder.setRtspSettings(rtspSettings);
-
-                        LiveStreamSettings liveStreamSettings = liveStreamSettingsBuilder.build();
-                        iLiveStreamManager.setLiveStreamSettings(liveStreamSettings);
-
-                        // 开启直播推流
-                        iLiveStreamManager.startStream(new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                showToast("Start Live Success");
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-                                showToast("Start Live Fail");
-                            }
-                        });
-                        liveOn = true;
-                    } else {
-                        iLiveStreamManager.stopStream(new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                showToast("Stop Live Success");
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-                                showToast("Stop Live Fail");
-                            }
-                        });
-                        availableVideoChannelLive.closeChannel(new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-
-                            }
-                        });
-                        liveOn = false;
-                    }
-                } else {
-                    showToast("LiveStream Fail");
-                }
-
-                break;
-
-            // 单独拍照测试程序
-            case R.id.btn_photo:
-
-                if (!payloadOn) {
-                    IPayloadManager payloadManager = PayloadCenter.getInstance().getPayloadManager().get(PayloadIndexType.UP);
-                    payloadManager.addPayloadWidgetInfoListener(new PayloadWidgetInfoListener() {
-                        @Override
-                        public void onPayloadWidgetInfoUpdate(PayloadWidgetInfo info) {
-
-                        }
-                    });
-                    payloadManager.pullWidgetInfoFromPayload(new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onSuccess() {
-
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull IDJIError error) {
-
-                        }
-                    });
-                    payloadManager.setWidgetValue(new WidgetValue(WidgetType.SWITCH, 0, 1), new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onSuccess() {
-                            payloadManager.setWidgetValue(new WidgetValue(WidgetType.RANGE, 1, 60), new CommonCallbacks.CompletionCallback() {
-                                @Override
-                                public void onSuccess() {
-
-                                }
-
-                                @Override
-                                public void onFailure(@NonNull IDJIError error) {
-
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull IDJIError error) {
-
-                        }
-                    });
-                    payloadOn = true;
-                } else {
-                    IPayloadManager payloadManager = PayloadCenter.getInstance().getPayloadManager().get(PayloadIndexType.UP);
-                    payloadManager.addPayloadWidgetInfoListener(new PayloadWidgetInfoListener() {
-                        @Override
-                        public void onPayloadWidgetInfoUpdate(PayloadWidgetInfo info) {
-
-                        }
-                    });
-                    payloadManager.pullWidgetInfoFromPayload(new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onSuccess() {
-
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull IDJIError error) {
-
-                        }
-                    });
-                    payloadManager.setWidgetValue(new WidgetValue(WidgetType.SWITCH, 0, 0), new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onSuccess() {
-
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull IDJIError error) {
-
-                        }
-                    });
-                    payloadOn = false;
-                }
-
-
-                //ISO参数调节
-                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.MANUAL, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        System.out.println("-----------ISO:CameraExposureMode.MANUAL设置成功-----------");
-                        KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyISO, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraISO.ISO_200, new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                System.out.println("-----------ISO:CameraISO.ISO_100设置成功-----------");
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-                                System.out.println("-----------ISO:CameraISO.ISO_100设置失败-----------");
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        System.out.println("-----------ISO:CameraExposureMode.MANUAL设置失败-----------");
-                    }
-                });
-
-                //快门
-                KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyShutterSpeed, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraShutterSpeed.SHUTTER_SPEED1_1000, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_500设置成功-----------");
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-                        System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_500设置失败-----------");
-                    }
-                });
-
-                KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMinValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
-                    @Override
-                    public void onSuccess(Integer integer) {
-                        System.out.println("--------------KeyCameraFocusRingMinValue: " + integer.intValue());
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-
-                KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMaxValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
-                    @Override
-                    public void onSuccess(Integer integer) {
-                        focusValue = integer.intValue();
-                        System.out.println("--------------KeyCameraFocusRingMaxValue: " + focusValue);
-                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
-                                    @Override
-                                    public void onSuccess() {
-                                        KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.MANUAL, new CommonCallbacks.CompletionCallback() {
-                                            @Override
-                                            public void onSuccess() {
-                                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingValue), focusValue, new CommonCallbacks.CompletionCallback() {
-                                                    @Override
-                                                    public void onSuccess() {
-                                                        showToast("Set focusValue Success");
-                                                    }
-
-                                                    @Override
-                                                    public void onFailure(@NonNull IDJIError error) {
-
-                                                    }
-
-                                                });
-                                            }
-
-                                            @Override
-                                            public void onFailure(@NonNull IDJIError error) {
-
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onFailure(@NonNull IDJIError error) {
-
-                                    }
-                                });
-
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull IDJIError error) {
-
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull IDJIError error) {
-
-                    }
-                });
-
-                break;
-
-            // 拉取图片并下载
-            case R.id.btn_upload:
 
                 showToast("Upload!");
 
@@ -1025,7 +965,51 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 if (transferFlag == 1) {
                                     if (!transferUpFlag) {
                                         transferUpFlag = true;
+                                        trackTaskOver = true;
+//                                        if (null != mSendVirtualStickDataTimer) {
+//                                            mSendVirtualStickDataTask.cancel();
+//                                            mSendVirtualStickDataTask = null;
+//                                            mSendVirtualStickDataTimer.cancel();
+//                                            mSendVirtualStickDataTimer.purge();
+//                                            mSendVirtualStickDataTimer = null;
+//                                        }
                                         showToast("Transfer Start!");
+                                        // 传输结束
+                                        // 获取可用的码流通道
+                                        IVideoChannel availableVideoChannelLive = VideoStreamManager.getInstance().getAvailableVideoChannel(VideoChannelType.PRIMARY_STREAM_CHANNEL);
+
+                                        ILiveStreamManager iLiveStreamManager = LiveStreamManager.getInstance();
+                                        iLiveStreamManager.stopStream(new CommonCallbacks.CompletionCallback() {
+                                            @Override
+                                            public void onSuccess() {
+                                                showToast("Stop Live Success");
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull IDJIError error) {
+                                                showToast("Stop Live Fail");
+                                            }
+                                        });
+                                        availableVideoChannelLive.closeChannel(new CommonCallbacks.CompletionCallback() {
+                                            @Override
+                                            public void onSuccess() {
+
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull IDJIError error) {
+
+                                            }
+                                        });
+
+                                        try {
+                                            Thread.sleep(5000);
+                                        } catch (InterruptedException e) {
+                                            throw new RuntimeException(e);
+                                        }
+
+                                        liveOn = false;
+
                                         File logFile;
                                         FileWriter fileWriter = null;
                                         PrintWriter printWriter = null;
@@ -1087,7 +1071,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                         try {
                                             //等待拉取多媒体文件
-                                            while(realMediaFileListState != MediaFileListState.UP_TO_DATE) {
+                                            while(realMediaFileListState != MediaFileListState.UP_TO_DATE || !pullSuccess) {
 
                                             }
 
@@ -1098,6 +1082,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
                                                 MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
                                                 List<MediaFile> photoData = mediaFileListData.getData();
+                                                showToast("photoData size: " + photoData.size());
                                                 if (photoData.size() > 0) {
                                                     for (MediaFile mediaFile : photoData) {
                                                         while (sendPicFin) {
@@ -1172,6 +1157,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     printWriter.flush();
                                                     fileWriter.flush();
                                                     Socket client = new Socket("192.168.3.217", 8888);
+//                                                    Socket client = new Socket("192.168.192.201", 8888);
                                                     showToast("Connect success!");
 
                                                     OutputStream os = client.getOutputStream();
@@ -1241,11 +1227,708 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                         }
                                                     });
 
-//                                                    for(File imageFile : imageFiles) {
-//                                                        if (imageFile.isFile()) {
-//                                                            imageFile.delete();
-//                                                        }
+                                                    for(File imageFile : imageFiles) {
+                                                        if (imageFile.isFile()) {
+                                                            imageFile.delete();
+                                                        }
+                                                    }
+
+                                                    showToast("Transfer Success!");
+
+
+                                                } else {
+                                                    if (uploadFinish) {
+                                                        MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                                            @Override
+                                                            public void onSuccess() {
+
+                                                            }
+
+                                                            @Override
+                                                            public void onFailure(@NonNull IDJIError error) {
+
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            }
+
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+
+                                    }
+                                } else {
+                                    transferUpFlag = false;
+                                }
+                            }
+                        }
+                    }).start();
+                }
+
+                break;
+
+
+
+
+            // 云台控制
+            case R.id.btn_gimbal:
+
+                // 设置云台角度Pitch和Yaw
+                GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
+                gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
+                gimbalAngleRotation.setPitch(0.0);
+                gimbalAngleRotation.setYaw(0.0);
+
+                KeyManager.getInstance().performAction(KeyTools.createKey(GimbalKey.KeyRotateByAngle), gimbalAngleRotation, new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+                    @Override
+                    public void onSuccess(EmptyMsg emptyMsg) {
+
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull IDJIError error) {
+
+                    }
+                });
+
+                break;
+
+            // RTSP视频流
+            case R.id.btn_start_live:
+//                long startliveTime = 0;
+//                startliveTime = System.currentTimeMillis();
+//
+//                if(startliveTime - deletephotoTime > 13000 && firstDeletePhoto == false && startliveTime > deletephotoTime){
+
+                if(firstDeletePhoto == false){
+
+            }else{
+                    showToast("live stream is not available");
+                    break;
+                }
+
+
+                // 获取可用的码流源
+                List<StreamSource> frameLive = VideoStreamManager.getInstance().getAvailableStreamSources();
+                // 获取可用的码流通道
+                IVideoChannel availableVideoChannelLive = VideoStreamManager.getInstance().getAvailableVideoChannel(VideoChannelType.PRIMARY_STREAM_CHANNEL);
+
+                ILiveStreamManager iLiveStreamManager = LiveStreamManager.getInstance();
+
+                if (frameLive != null) {
+
+                    if (!liveOn) {
+                        // 绑定视频源并开启码流通道
+                        availableVideoChannelLive.startChannel(frameLive.get(0), new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+
+                            }
+                        });
+
+                        if (firstLive) {
+                            firstLive = false;
+                            // 设置解码方式并将图像渲染到屏幕上
+                            VideoDecoder videoDecoderLive = new VideoDecoder(this.getBaseContext(), availableVideoChannelLive.getVideoChannelType(), DecoderOutputMode.SURFACE_MODE, mSurfaceView, 1080, 720, true);
+                        }
+
+                        // 设置直播状态监听器
+                        iLiveStreamManager.addLiveStreamStatusListener(new LiveStreamStatusListener() {
+                            @Override
+                            public void onLiveStreamStatusUpdate(LiveStreamStatus status) {
+
+                            }
+
+                            @Override
+                            public void onError(IDJIError error) {
+                                showToast("LiveStream Fail");
+                            }
+                        });
+
+                        // RTSP视频流的用户名，密码和端口
+                        RtspSettings.Builder rtspSettingsBuilder = new RtspSettings.Builder();
+                        rtspSettingsBuilder.setUserName("yijia");
+                        rtspSettingsBuilder.setPassWord("123");
+                        rtspSettingsBuilder.setPort(8554);
+                        RtspSettings rtspSettings = rtspSettingsBuilder.build();
+
+                        LiveStreamSettings.Builder liveStreamSettingsBuilder = new LiveStreamSettings.Builder();
+                        liveStreamSettingsBuilder.setLiveStreamType(LiveStreamType.RTSP);
+                        liveStreamSettingsBuilder.setRtspSettings(rtspSettings);
+
+                        LiveStreamSettings liveStreamSettings = liveStreamSettingsBuilder.build();
+                        iLiveStreamManager.setLiveStreamSettings(liveStreamSettings);
+
+                        // 开启直播推流
+//                        iLiveStreamManager.startStream(new CommonCallbacks.CompletionCallback() {
+//                            @Override
+//                            public void onSuccess() {
+//                                showToast("Start Live Success");
+//                            }
+//
+//                            @Override
+//                            public void onFailure(@NonNull IDJIError error) {
+//                                showToast("Start Live Fail");
+//                            }
+//                        });
+                        // 修改后的代码片段
+                        iLiveStreamManager.startStream(new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                showToast("Start Live Success");
+                                // 添加500ms延时确保流稳定建立
+                                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                    // 此处添加后续操作代码（示例）
+                                    Log.d("LiveStream", "Stream fully initialized");
+                                    // 可以在这里添加启动预览、开始录制等后续操作
+                                }, 1000);
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+                                showToast("Start Live Fail");
+                            }
+                        });
+
+                        liveOn = true;
+                    } else {
+                        iLiveStreamManager.stopStream(new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                showToast("Stop Live Success");
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+                                showToast("Stop Live Fail");
+                            }
+                        });
+                        availableVideoChannelLive.closeChannel(new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onSuccess() {
+
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull IDJIError error) {
+
+                            }
+                        });
+                        liveOn = false;
+                    }
+                } else {
+                    showToast("LiveStream Fail");
+                }
+
+                setCameraParameters();
+                showToast("one");
+
+                // 延迟3000毫秒（3秒）执行第二次setCameraParameters()和showToast("two")
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        setCameraParameters();
+                        showToast("two");
+                    }
+                }, 3000);
+
+                break;
+
+
+            // 单独拍照测试程序
+//            case R.id.btn_photo:
+
+                //payload灯光控制
+//                if (!payloadOn) {
+//                    IPayloadManager payloadManager = PayloadCenter.getInstance().getPayloadManager().get(PayloadIndexType.UP);
+//                    payloadManager.addPayloadWidgetInfoListener(new PayloadWidgetInfoListener() {
+//                        @Override
+//                        public void onPayloadWidgetInfoUpdate(PayloadWidgetInfo info) {
+//
+//                        }
+//                    });
+//                    payloadManager.pullWidgetInfoFromPayload(new CommonCallbacks.CompletionCallback() {
+//                        @Override
+//                        public void onSuccess() {
+//
+//                        }
+//
+//                        @Override
+//                        public void onFailure(@NonNull IDJIError error) {
+//
+//                        }
+//                    });
+//                    payloadManager.setWidgetValue(new WidgetValue(WidgetType.SWITCH, 0, 1), new CommonCallbacks.CompletionCallback() {
+//                        @Override
+//                        public void onSuccess() {
+//                            payloadManager.setWidgetValue(new WidgetValue(WidgetType.RANGE, 1, 60), new CommonCallbacks.CompletionCallback() {
+//                                @Override
+//                                public void onSuccess() {
+//
+//                                }
+//
+//                                @Override
+//                                public void onFailure(@NonNull IDJIError error) {
+//
+//                                }
+//                            });
+//                        }
+//
+//                        @Override
+//                        public void onFailure(@NonNull IDJIError error) {
+//
+//                        }
+//                    });
+//                    payloadOn = true;
+//                } else {
+//                    IPayloadManager payloadManager = PayloadCenter.getInstance().getPayloadManager().get(PayloadIndexType.UP);
+//                    payloadManager.addPayloadWidgetInfoListener(new PayloadWidgetInfoListener() {
+//                        @Override
+//                        public void onPayloadWidgetInfoUpdate(PayloadWidgetInfo info) {
+//
+//                        }
+//                    });
+//                    payloadManager.pullWidgetInfoFromPayload(new CommonCallbacks.CompletionCallback() {
+//                        @Override
+//                        public void onSuccess() {
+//
+//                        }
+//
+//                        @Override
+//                        public void onFailure(@NonNull IDJIError error) {
+//
+//                        }
+//                    });
+//                    payloadManager.setWidgetValue(new WidgetValue(WidgetType.SWITCH, 0, 0), new CommonCallbacks.CompletionCallback() {
+//                        @Override
+//                        public void onSuccess() {
+//
+//                        }
+//
+//                        @Override
+//                        public void onFailure(@NonNull IDJIError error) {
+//
+//                        }
+//                    });
+//                    payloadOn = false;
+//                }
+
+//            case R.id.btn_photo:
+//
+//
+//                //ISO参数调节
+//                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.MANUAL, new CommonCallbacks.CompletionCallback() {
+//                    @Override
+//                    public void onSuccess() {
+//                        System.out.println("-----------ISO:CameraExposureMode.MANUAL设置成功-----------");
+//                        KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyISO, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraISO.ISO_200, new CommonCallbacks.CompletionCallback() {
+//                            @Override
+//                            public void onSuccess() {
+//                                System.out.println("-----------ISO:CameraISO.ISO_100设置成功-----------");
+//                            }
+//
+//                            @Override
+//                            public void onFailure(@NonNull IDJIError error) {
+//                                System.out.println("-----------ISO:CameraISO.ISO_100设置失败-----------");
+//                            }
+//                        });
+//                    }
+//
+//                    @Override
+//                    public void onFailure(@NonNull IDJIError error) {
+//                        System.out.println("-----------ISO:CameraExposureMode.MANUAL设置失败-----------");
+//                    }
+//                });
+//
+//                //快门
+//                KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyShutterSpeed, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraShutterSpeed.SHUTTER_SPEED1_1000, new CommonCallbacks.CompletionCallback() {
+//                    @Override
+//                    public void onSuccess() {
+//                        System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_500设置成功-----------");
+//                    }
+//
+//                    @Override
+//                    public void onFailure(@NonNull IDJIError error) {
+//                        System.out.println("-----------快门：CameraShutterSpeed.SHUTTER_SPEED1_500设置失败-----------");
+//                    }
+//                });
+//
+//                //设置手动对焦
+//                KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMinValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
+//                    @Override
+//                    public void onSuccess(Integer integer) {
+//                        System.out.println("--------------KeyCameraFocusRingMinValue: " + integer.intValue());
+//                    }
+//
+//                    @Override
+//                    public void onFailure(@NonNull IDJIError error) {
+//
+//                    }
+//                });
+//
+//                //焦距
+//                KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingMaxValue), new CommonCallbacks.CompletionCallbackWithParam<Integer>() {
+//                    @Override
+//                    public void onSuccess(Integer integer) {
+//                        focusValue = integer.intValue();
+//                        System.out.println("--------------KeyCameraFocusRingMaxValue: " + focusValue);
+//                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
+//                            @Override
+//                            public void onSuccess() {
+//                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
+//                                    @Override
+//                                    public void onSuccess() {
+//                                        KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.MANUAL, new CommonCallbacks.CompletionCallback() {
+//                                            @Override
+//                                            public void onSuccess() {
+//                                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraFocusRingValue), focusValue, new CommonCallbacks.CompletionCallback() {
+//                                                    @Override
+//                                                    public void onSuccess() {
+//                                                        showToast("Set focusValue Success");
 //                                                    }
+//
+//                                                    @Override
+//                                                    public void onFailure(@NonNull IDJIError error) {
+//
+//                                                    }
+//
+//                                                });
+//                                            }
+//
+//                                            @Override
+//                                            public void onFailure(@NonNull IDJIError error) {
+//
+//                                            }
+//                                        });
+//                                    }
+//
+//                                    @Override
+//                                    public void onFailure(@NonNull IDJIError error) {
+//
+//                                    }
+//                                });
+//
+//                            }
+//
+//                            @Override
+//                            public void onFailure(@NonNull IDJIError error) {
+//
+//                            }
+//                        });
+//
+//                    }
+//
+//                    @Override
+//                    public void onFailure(@NonNull IDJIError error) {
+//
+//                    }
+//                });
+//
+//                break;
+
+            case R.id.btn_photo:
+                setCameraParameters();
+                showToast("one");
+
+                // 延迟1000毫秒（1秒）执行第二次setCameraParameters()和showToast("two")
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        setCameraParameters();
+                        showToast("two");
+                    }
+                }, 1000);
+
+                break;
+
+
+            // 拉取图片并下载
+            case R.id.btn_upload:
+
+                showToast("Upload!");
+
+                if (firstAvoid) {
+                    firstAvoid = false;
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            while (true) {
+                                if (transferFlag == 1) {
+                                    if (!transferUpFlag) {
+                                        transferUpFlag = true;
+                                        trackTaskOver = true;
+//                                        if (null != mSendVirtualStickDataTimer) {
+//                                            mSendVirtualStickDataTask.cancel();
+//                                            mSendVirtualStickDataTask = null;
+//                                            mSendVirtualStickDataTimer.cancel();
+//                                            mSendVirtualStickDataTimer.purge();
+//                                            mSendVirtualStickDataTimer = null;
+//                                        }
+                                        showToast("Transfer Start!");
+                                        // 传输结束
+                                        // 获取可用的码流通道
+                                        IVideoChannel availableVideoChannelLive = VideoStreamManager.getInstance().getAvailableVideoChannel(VideoChannelType.PRIMARY_STREAM_CHANNEL);
+
+                                        ILiveStreamManager iLiveStreamManager = LiveStreamManager.getInstance();
+                                        iLiveStreamManager.stopStream(new CommonCallbacks.CompletionCallback() {
+                                            @Override
+                                            public void onSuccess() {
+                                                showToast("Stop Live Success");
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull IDJIError error) {
+                                                showToast("Stop Live Fail");
+                                            }
+                                        });
+                                        availableVideoChannelLive.closeChannel(new CommonCallbacks.CompletionCallback() {
+                                            @Override
+                                            public void onSuccess() {
+
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull IDJIError error) {
+
+                                            }
+                                        });
+
+                                        try {
+                                            Thread.sleep(5000);
+                                        } catch (InterruptedException e) {
+                                            throw new RuntimeException(e);
+                                        }
+
+                                        liveOn = false;
+
+                                        File logFile;
+                                        FileWriter fileWriter = null;
+                                        PrintWriter printWriter = null;
+                                        // 记录无人机的状态信息
+                                        try {
+                                            logFile = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/FlightLog/pictureSend.txt"));
+                                            fileWriter = new FileWriter(logFile, true);
+                                            printWriter = new PrintWriter(fileWriter);
+                                            printWriter.println( "Transfer Start ");
+                                            printWriter.flush();
+                                            fileWriter.flush();
+                                        } catch (IOException ioException) {
+                                            ioException.printStackTrace();
+                                        }
+                                        // 添加媒体文件列表监听
+                                        MediaManager.getInstance().addMediaFileListStateListener(new MediaFileListStateListener() {
+                                            @Override
+                                            public void onUpdate(MediaFileListState mediaFileListState) {
+                                                realMediaFileListState = mediaFileListState;
+                                            }
+                                        });
+
+                                        MediaManager.getInstance().enable(new CommonCallbacks.CompletionCallback() {
+                                            @Override
+                                            public void onSuccess() {
+                                                MediaManager.getInstance().pullMediaFileListFromCamera(new PullMediaFileListParam.Builder().filter(MediaFileFilter.PHOTO).build(), new CommonCallbacks.CompletionCallback() {
+                                                    @Override
+                                                    public void onSuccess() {
+                                                        showToast("Pull Success");
+                                                        pullSuccess = true;
+                                                    }
+
+                                                    @Override
+                                                    public void onFailure(@NonNull IDJIError error) {
+                                                        showToast("Pull Fail");
+                                                    }
+                                                });
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull IDJIError error) {
+                                                System.out.println("Enable Fail");
+                                            }
+                                        });
+                                        try {
+                                            printWriter.println("pullSuccess: " + pullSuccess);
+                                            printWriter.flush();
+                                            fileWriter.flush();
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+
+                                        // 设置文件保存路径
+                                        File fileDir = new File(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                                        //此电脑\DJI RC Pro Enterprise\内部共享存储空间\Android\data\com.dji.myapplication\files\DJI\mediafile
+                                        if(!fileDir.exists()) {
+                                            fileDir.mkdirs();
+                                        }
+
+                                        try {
+                                            //等待拉取多媒体文件
+                                            while(realMediaFileListState != MediaFileListState.UP_TO_DATE || !pullSuccess) {
+
+                                            }
+
+                                            printWriter.println("realMediaFileListState ok");
+                                            printWriter.flush();
+                                            fileWriter.flush();
+                                            int num = 0;
+                                            if (realMediaFileListState == MediaFileListState.UP_TO_DATE) {
+                                                MediaFileListData mediaFileListData = MediaManager.getInstance().getMediaFileListData();
+                                                List<MediaFile> photoData = mediaFileListData.getData();
+                                                showToast("photoData size: " + photoData.size());
+                                                if (photoData.size() > 0) {
+                                                    for (MediaFile mediaFile : photoData) {
+                                                        while (sendPicFin) {
+
+                                                        }
+                                                        num++;
+                                                        showToast("Send: " + num);
+                                                        printWriter.println("Send: " + num);
+                                                        printWriter.flush();
+                                                        fileWriter.flush();
+                                                        sendPicFin = true;
+                                                        String externalCacheDirPath = DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile" + "/" + mediaFile.getFileName());
+                                                        FileOutputStream fos = new FileOutputStream(new File(externalCacheDirPath));
+                                                        mediaFile.pullOriginalMediaFileFromCamera(0, new MediaFileDownloadListener() {
+                                                            @Override
+                                                            public void onStart() {
+                                                                stime = System.currentTimeMillis();
+                                                            }
+
+                                                            @Override
+                                                            public void onProgress(long total, long current) {
+
+                                                            }
+
+                                                            @Override
+                                                            public void onRealtimeDataUpdate(byte[] data, long position) {
+                                                                try {
+                                                                    fos.write(data, 0, data.length);
+                                                                } catch (IOException e) {
+                                                                    e.printStackTrace();
+                                                                }
+                                                            }
+
+                                                            @Override
+                                                            public void onFinish() {
+                                                                uploadFinish = true;
+                                                                etime = System.currentTimeMillis();
+                                                                long wasteTime = etime - stime;
+                                                                System.out.println("Send waste time: " + wasteTime);
+                                                                MediaManager.getInstance().disable(new CommonCallbacks.CompletionCallback() {
+                                                                    @Override
+                                                                    public void onSuccess() {
+
+                                                                    }
+
+                                                                    @Override
+                                                                    public void onFailure(@NonNull IDJIError error) {
+
+                                                                    }
+                                                                });
+                                                                sendPicFin = false;
+                                                            }
+
+                                                            @Override
+                                                            public void onFailure(IDJIError error) {
+
+                                                            }
+                                                        });
+                                                    }
+                                                    printWriter.println("Send over");
+                                                    printWriter.flush();
+                                                    fileWriter.flush();
+
+                                                    try {
+                                                        Thread.sleep(500);
+                                                    } catch (InterruptedException e) {
+                                                        e.printStackTrace();
+                                                    }
+
+                                                    showToast("Connecting...");
+                                                    printWriter.println("Connecting...");
+                                                    printWriter.flush();
+                                                    fileWriter.flush();
+                                                    Socket client = new Socket("192.168.3.217", 8888);
+//                                                    Socket client = new Socket("192.168.192.201", 8888);
+                                                    showToast("Connect success!");
+
+                                                    OutputStream os = client.getOutputStream();
+                                                    OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
+                                                    BufferedWriter bw = new BufferedWriter(osw);
+
+                                                    InputStream is = client.getInputStream();
+                                                    InputStreamReader isr = new InputStreamReader(is, "UTF-8");
+                                                    BufferedReader br = new BufferedReader(isr);
+
+                                                    List<File> imageFiles = getImageFiles(DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), "/mediafile"));
+                                                    int imageCount = imageFiles.size();
+
+                                                    bw.write(String.valueOf(imageCount) + '\n');
+                                                    bw.flush();
+
+                                                    br.readLine();
+
+                                                    // 传输每张图片
+                                                    byte[] imageData = new byte[10 * 1024 * 1024];
+                                                    for (File imageFile : imageFiles) {
+                                                        //发送文件名
+                                                        String fileName = imageFile.getName();
+                                                        bw.write(fileName + '\n');
+                                                        bw.flush();
+
+                                                        br.readLine();
+
+                                                        //发送文件大小
+                                                        long imageLen = imageFile.length();
+                                                        bw.write(String.valueOf(imageLen) + '\n');
+                                                        bw.flush();
+
+                                                        br.readLine();
+
+                                                        //读取文件
+                                                        FileInputStream fileInputStream = new FileInputStream(imageFile);
+                                                        fileInputStream.read(imageData, 0, (int) imageLen);
+                                                        fileInputStream.close();
+
+                                                        //发送图片数据
+                                                        os.write(imageData, 0, (int) imageLen);
+                                                        os.flush();
+
+                                                        br.readLine();
+                                                    }
+
+                                                    bw.close();
+                                                    osw.close();
+                                                    os.close();
+
+                                                    br.close();
+                                                    isr.close();
+                                                    is.close();
+
+                                                    client.close();
+
+                                                    MediaManager.getInstance().deleteMediaFiles(photoData, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            System.out.println("清空数据成功！");
+                                                        }
+
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+                                                            System.out.println("清空数据失败！");
+                                                        }
+                                                    });
+
+                                                    for(File imageFile : imageFiles) {
+                                                        if (imageFile.isFile()) {
+                                                            imageFile.delete();
+                                                        }
+                                                    }
 
                                                     showToast("Transfer Success!");
 
@@ -1553,9 +2236,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnLand.setOnClickListener(this);
         mBtnTrack.setOnClickListener(this);
         mBtnGimbal.setOnClickListener(this);
-        mBtnLive.setOnClickListener(this);
         mBtnPhoto.setOnClickListener(this);
         mBtnUpload.setOnClickListener(this);
+//        mBtnLive.setOnClickListener(this);
+        mBtnLive = (Button) findViewById(R.id.btn_start_live);
+        mBtnLive.setEnabled(false); // 初始禁用
+        mBtnLive.setAlpha(0.5f);    // 半透明状态
+        mBtnLive.setOnClickListener(this); // 保持点击监听
+        mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
+
+            }
+
+            @Override
+            public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
+
+            }
+        });
+        mScreenJoystickRight = (OnScreenJoystick) findViewById(R.id.directionJoystickRight);
+        mScreenJoystickLeft = (OnScreenJoystick) findViewById(R.id.directionJoystickLeft);
+
+
 
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
@@ -1708,7 +2415,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void run() {
-            if(trackOn) {
+            if(trackOn && !trackTaskOver) {
                 // 断联逻辑
                 if (readNum != null && readNum.length == 14) {
                     String curRecData = readNum[5];
