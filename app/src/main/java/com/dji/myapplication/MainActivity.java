@@ -594,8 +594,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                     try {
                                         // 开启TCP客户端程序，接收无人车的命令
-                                        socket = new Socket("192.168.3.217", 12345);
-//                                        socket = new Socket("192.168.192.201", 12345);
+//                                        socket = new Socket("192.168.3.217", 12345);
+                                        socket = new Socket("192.168.192.201", 12345);
                                         showToast("Connect Success");
                                         isDisConnect = false;
 
@@ -836,52 +836,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             }
 
                                             if (adjustFlagFinished != adjustFlagFinished_pre) {
-                                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.PROGRAM, new CommonCallbacks.CompletionCallback() {
-                                                    @Override
-                                                    public void onSuccess() {
-                                                        System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置成功-----------");
+                                                if(adjustFlagFinished > -30) {
+                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyExposureMode), CameraExposureMode.PROGRAM, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置成功-----------");
 
-                                                    }
+                                                        }
 
-                                                    @Override
-                                                    public void onFailure(@NonNull IDJIError error) {
-                                                        System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置失败-----------");
-                                                    }
-                                                });
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
+                                                            System.out.println("-----------ISO:CameraExposureMode.PROGRAM设置失败-----------");
+                                                        }
+                                                    });
 
-                                                //对焦模式 AFC
-                                                KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
-                                                    @Override
-                                                    public void onSuccess() {
-                                                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
-                                                            @Override
-                                                            public void onSuccess() {
-                                                                KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AFC, new CommonCallbacks.CompletionCallback() {
-                                                                    @Override
-                                                                    public void onSuccess() {
+                                                    //对焦模式 AFC
+                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraVideoStreamSource), CameraVideoStreamSourceType.ZOOM_CAMERA, new CommonCallbacks.CompletionCallback() {
+                                                        @Override
+                                                        public void onSuccess() {
+                                                            KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraZoomRatios), 1.0, new CommonCallbacks.CompletionCallback() {
+                                                                @Override
+                                                                public void onSuccess() {
+                                                                    KeyManager.getInstance().setValue(KeyTools.createCameraKey(CameraKey.KeyCameraFocusMode, ComponentIndexType.LEFT_OR_MAIN, CameraLensType.CAMERA_LENS_ZOOM), CameraFocusMode.AFC, new CommonCallbacks.CompletionCallback() {
+                                                                        @Override
+                                                                        public void onSuccess() {
 
-                                                                    }
+                                                                        }
 
-                                                                    @Override
-                                                                    public void onFailure(@NonNull IDJIError error) {
+                                                                        @Override
+                                                                        public void onFailure(@NonNull IDJIError error) {
 
-                                                                    }
-                                                                });
-                                                            }
+                                                                        }
+                                                                    });
+                                                                }
 
-                                                            @Override
-                                                            public void onFailure(@NonNull IDJIError error) {
+                                                                @Override
+                                                                public void onFailure(@NonNull IDJIError error) {
 
-                                                            }
-                                                        });
+                                                                }
+                                                            });
 
-                                                    }
+                                                        }
 
-                                                    @Override
-                                                    public void onFailure(@NonNull IDJIError error) {
+                                                        @Override
+                                                        public void onFailure(@NonNull IDJIError error) {
 
-                                                    }
-                                                });
+                                                        }
+                                                    });
+                                                }
+
                                                 // 设置云台角度Pitch和Yaw
                                                 GimbalAngleRotation gimbalAngleRotation = new GimbalAngleRotation();
                                                 gimbalAngleRotation.setMode(GimbalAngleRotationMode.ABSOLUTE_ANGLE);
@@ -1243,8 +1246,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     printWriter.println("Connecting...");
                                                     printWriter.flush();
                                                     fileWriter.flush();
-                                                    Socket client = new Socket("192.168.3.217", 8888);
-//                                                    Socket client = new Socket("192.168.192.201", 8888);
+//                                                    Socket client = new Socket("192.168.3.217", 8888);
+                                                    Socket client = new Socket("192.168.192.201", 8888);
                                                     showToast("Connect success!");
 
                                                     OutputStream os = client.getOutputStream();
@@ -1727,8 +1730,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     printWriter.println("Connecting...");
                                                     printWriter.flush();
                                                     fileWriter.flush();
-                                                    Socket client = new Socket("192.168.3.217", 8888);
-//                                                    Socket client = new Socket("192.168.192.201", 8888);
+//                                                    Socket client = new Socket("192.168.3.217", 8888);
+                                                    Socket client = new Socket("192.168.192.201", 8888);
                                                     showToast("Connect success!");
 
                                                     OutputStream os = client.getOutputStream();
