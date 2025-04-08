@@ -1370,8 +1370,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                     try {
                                         // 开启TCP客户端程序，接收无人车的命令
-//                                        socket = new Socket("192.168.3.217", 12345);
-                                        socket = new Socket("192.168.192.201", 12345);
+                                        socket = new Socket("192.168.3.217", 12345);
+//                                        socket = new Socket("192.168.192.201", 12345);
                                         showToast("Connect Success");
                                         isDisConnect = false;
 
@@ -2022,8 +2022,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     printWriter.println("Connecting...");
                                                     printWriter.flush();
                                                     fileWriter.flush();
-//                                                    Socket client = new Socket("192.168.3.217", 8888);
-                                                    Socket client = new Socket("192.168.192.201", 8888);
+                                                    Socket client = new Socket("192.168.3.217", 8888);
+//                                                    Socket client = new Socket("192.168.192.201", 8888);
                                                     showToast("Connect success!");
 
                                                     OutputStream os = client.getOutputStream();
