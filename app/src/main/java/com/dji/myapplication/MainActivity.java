@@ -241,6 +241,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private boolean isFirstDisableClick = true;
 
+    private boolean isParameterSet = false;
+
 
 
 
@@ -1732,56 +1734,137 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     }
                                                 });
                                             }
-
+//                                            if(photoFlag == 1) {
+//                                                // 只有在上升沿时刻才会进行拍照
+//                                                if (!photoUpFlag) {
+//                                                    try {
+//                                                        Thread.sleep(50);
+//                                                    } catch (InterruptedException e) {
+//                                                        e.printStackTrace();
+//                                                    }
+//
+//
+//                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
+//                                                        @Override
+//                                                        public void onSuccess() {
+//                                                            // 获取当前内存信息
+//                                                            KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
+//                                                                @Override
+//                                                                public void onSuccess(CameraStorageInfos cameraStorageInfos) {
+//                                                                    SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
+//                                                                    // 内存大于100MB时才会进行拍照
+//                                                                    if (SDCapacity > 100) {
+//                                                                        KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+//                                                                            @Override
+//                                                                            public void onSuccess(EmptyMsg emptyMsg) {
+//                                                                                showToast("Photo Success");
+//                                                                            }
+//
+//                                                                            @Override
+//                                                                            public void onFailure(@NonNull IDJIError error) {
+//                                                                                showToast("Photo Fail");
+//                                                                            }
+//                                                                        });
+//                                                                    }
+//                                                                }
+//
+//                                                                @Override
+//                                                                public void onFailure(@NonNull IDJIError error) {
+//
+//                                                                }
+//                                                            });
+//
+//                                                        }
+//
+//                                                        @Override
+//                                                        public void onFailure(@NonNull IDJIError error) {
+//                                                            showToast("set fail!!!");
+//                                                        }
+//                                                    });
+//
+//                                                    photoUpFlag = true;
+//                                                }
+//                                            } else {
+//                                                photoUpFlag = false;
+//                                            }
 
                                             // 拍照标志位
                                             if(photoFlag == 1) {
                                                 // 只有在上升沿时刻才会进行拍照
                                                 if (!photoUpFlag) {
                                                     try {
-                                                        Thread.sleep(100);
+                                                        Thread.sleep(50);
                                                     } catch (InterruptedException e) {
                                                         e.printStackTrace();
                                                     }
 
+                                                    if (!isParameterSet) {
+                                                        // 如果参数尚未设置，则进行参数设置
+                                                        KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
+                                                            @Override
+                                                            public void onSuccess() {
+                                                                isParameterSet = true; // 设置标志位为已设置
+                                                                // 获取当前内存信息
+                                                                KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
+                                                                    @Override
+                                                                    public void onSuccess(CameraStorageInfos cameraStorageInfos) {
+                                                                        SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
+                                                                        // 内存大于100MB时才会进行拍照
+                                                                        if (SDCapacity > 100) {
+                                                                            KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+                                                                                @Override
+                                                                                public void onSuccess(EmptyMsg emptyMsg) {
+                                                                                    showToast("Photo Success");
+                                                                                }
 
-                                                    KeyManager.getInstance().setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, new CommonCallbacks.CompletionCallback() {
-                                                        @Override
-                                                        public void onSuccess() {
-                                                            // 获取当前内存信息
-                                                            KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
-                                                                @Override
-                                                                public void onSuccess(CameraStorageInfos cameraStorageInfos) {
-                                                                    SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
-                                                                    // 内存大于100MB时才会进行拍照
-                                                                    if (SDCapacity > 100) {
-                                                                        KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
-                                                                            @Override
-                                                                            public void onSuccess(EmptyMsg emptyMsg) {
-                                                                                showToast("Photo Success");
-                                                                            }
-
-                                                                            @Override
-                                                                            public void onFailure(@NonNull IDJIError error) {
-                                                                                showToast("Photo Fail");
-                                                                            }
-                                                                        });
+                                                                                @Override
+                                                                                public void onFailure(@NonNull IDJIError error) {
+                                                                                    showToast("Photo Fail");
+                                                                                }
+                                                                            });
+                                                                        }
                                                                     }
+
+                                                                    @Override
+                                                                    public void onFailure(@NonNull IDJIError error) {
+
+                                                                    }
+                                                                });
+                                                            }
+
+                                                            @Override
+                                                            public void onFailure(@NonNull IDJIError error) {
+                                                                showToast("set fail!!!");
+                                                            }
+                                                        });
+                                                    } else {
+                                                        // 如果参数已经设置，则直接进行拍照
+                                                        KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyCameraStorageInfos), new CommonCallbacks.CompletionCallbackWithParam<CameraStorageInfos>() {
+                                                            @Override
+                                                            public void onSuccess(CameraStorageInfos cameraStorageInfos) {
+                                                                SDCapacity = cameraStorageInfos.getCurrentCameraStorageInfo().getStorageCapacity();
+                                                                // 内存大于100MB时才会进行拍照
+                                                                if (SDCapacity > 100) {
+                                                                    KeyManager.getInstance().performAction(KeyTools.createKey(CameraKey.KeyStartShootPhoto), new CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>() {
+                                                                        @Override
+                                                                        public void onSuccess(EmptyMsg emptyMsg) {
+                                                                            showToast("Photo Success");
+                                                                        }
+
+                                                                        @Override
+                                                                        public void onFailure(@NonNull IDJIError error) {
+                                                                            showToast("Photo Fail");
+                                                                        }
+                                                                    });
                                                                 }
+                                                            }
 
-                                                                @Override
-                                                                public void onFailure(@NonNull IDJIError error) {
+                                                            @Override
+                                                            public void onFailure(@NonNull IDJIError error) {
 
-                                                                }
-                                                            });
-
-                                                        }
-
-                                                        @Override
-                                                        public void onFailure(@NonNull IDJIError error) {
-                                                            showToast("set fail!!!");
-                                                        }
-                                                    });
+                                                            }
+                                                        });
+                                                    }
 
                                                     photoUpFlag = true;
                                                 }
